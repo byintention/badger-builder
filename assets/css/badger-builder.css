@@ -1,0 +1,20 @@
+/* Badger Builder — front-end section styles (.bb-*).
+   Admin2 styles: assets/css/badger-builder-admin.css */
+
+:root {
+    --bb-text: #1a1a1a;
+    --bb-muted: #555;
+    --bb-bg: #fff;
+    --bb-accent: #2563eb;
+    --bb-border: #e5e7eb;
+    --bb-max: 1200px;
+    --bb-gap: 1.5rem;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.

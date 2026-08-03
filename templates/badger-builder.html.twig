@@ -1,0 +1,10 @@
+{% extends 'partials/base.html.twig' %}
+
+{% block body %}
+    <div class="bb-main">
+        {% for section in page.header.sections %}
+            {% set panel = section.panel|default(section.layout|default('text')) %}
+            {% include 'sections/' ~ panel ~ '.html.twig' ignore missing with { section: section, page: page, index: loop.index } %}
+        {% endfor %}
+    </div>
+{% endblock %}

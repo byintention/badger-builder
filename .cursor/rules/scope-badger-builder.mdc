@@ -1,0 +1,22 @@
+---
+description: Hard boundary — only edit the badger-builder plugin tree
+alwaysApply: true
+---
+
+# Scope: badger-builder plugin only
+
+- **Only modify files under this repository root** (`user/plugins/badger-builder/`).
+- Do **not** edit `user/config/`, `user/pages/`, themes, other plugins, `system/`, `vendor/`, or parent `grav-admin/.cursor/`.
+- If plugin enablement or site config is needed, **describe steps for the user**; do not apply them from this workspace.
+
+Examples:
+
+```
+✅ badger-builder.php
+✅ admin-next/fields/sections.js
+✅ blueprints.yaml
+
+❌ user/config/plugins/badger-builder.yaml
+❌ user/themes/intention/
+❌ grav-admin/.cursor/notes/changelog.md
+```

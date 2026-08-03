@@ -1,0 +1,6 @@
+{% set id = 'panel-' ~ index %}
+{% set size = section.filler_size|default('medium') %}
+{% set bg = section.filler_background|default('transparent') %}
+{% if bg == 'none' %}{% set bg = 'transparent' %}{% endif %}
+
+<section id="{{ id|e('html_attr') }}" class="bb-section bb-panel-filler bg-{{ bg|e('html_attr') }} bb-panel-filler-{{ size|e('html_attr') }}" aria-hidden="true"></section>

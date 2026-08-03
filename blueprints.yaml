@@ -1,0 +1,78 @@
+name: Badger Builder
+slug: badger-builder
+type: plugin
+version: 1.0.0
+description: Flexible page sections builder for Admin2 with theme-agnostic front-end rendering
+icon: layer-group
+author:
+  name: Intention
+  email: admin@fcswebsites.co.uk
+homepage: https://github.com/getgrav/grav
+keywords: grav, plugin, page-builder, sections, admin2
+license: MIT
+
+dependencies:
+  - { name: grav, version: '>=2.0.0-rc.1' }
+  - { name: api, version: '>=1.0.0-rc.1' }
+
+form:
+  validation: loose
+  fields:
+    enabled:
+      type: toggle
+      label: PLUGIN_ADMIN.PLUGIN_STATUS
+      highlight: 1
+      default: 1
+      options:
+        1: PLUGIN_ADMIN.ENABLED
+        0: PLUGIN_ADMIN.DISABLED
+      validate:
+        type: bool
+
+    enabled_panels:
+      type: checkboxes
+      label: PLUGIN_BADGER_BUILDER.ENABLED_PANELS
+      default: [hero, features, text, full, filler, boxes, faq]
+      options:
+        hero: Hero
+        features: Features grid
+        text: Text + image
+        full: Full width
+        filler: Filler
+        boxes: Boxes
+        faq: FAQ
+
+    default_panel:
+      type: select
+      label: PLUGIN_BADGER_BUILDER.DEFAULT_PANEL
+      default: text
+      options:
+        hero: Hero
+        features: Features grid
+        text: Text + image
+        full: Full width
+        filler: Filler
+        boxes: Boxes
+        faq: FAQ
+
+    show_panel_labels:
+      type: toggle
+      label: PLUGIN_BADGER_BUILDER.SHOW_PANEL_LABELS
+      highlight: 1
+      default: 1
+      options:
+        1: PLUGIN_ADMIN.YES
+        0: PLUGIN_ADMIN.NO
+      validate:
+        type: bool
+
+    built_in_css:
+      type: toggle
+      label: PLUGIN_BADGER_BUILDER.BUILT_IN_CSS
+      highlight: 1
+      default: 1
+      options:
+        1: PLUGIN_ADMIN.YES
+        0: PLUGIN_ADMIN.NO
+      validate:
+        type: bool

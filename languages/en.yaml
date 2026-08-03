@@ -1,0 +1,16 @@
+PLUGIN_BADGER_BUILDER:
+  ENABLED_PANELS: Enabled section panels
+  DEFAULT_PANEL: Default panel for new sections
+  SHOW_PANEL_LABELS: Show panel names in the editor
+  BUILT_IN_CSS: Load Badger Builder front-end CSS
+  SECTIONS: Page sections
+  SECTIONS_HELP: Add, remove, and reorder flexible content sections.
+  SITE_META: Site meta
+  JOB_CODE: Job code
+  JOB_CODE_HELP: Job / material code shown in the footer.
+  BRAND: Brand
+  BRAND_HELP: Adds a brand class on the page wrapper for theme styling.
+  BRAND_ACCRETE: Accrete
+  BRAND_BINOSTO: Binosto
+  BRAND_FULTIUM: Fultium
+  BRAND_MOVYMIA: Movymia

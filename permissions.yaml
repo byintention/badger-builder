@@ -1,0 +1,8 @@
+actions:
+  admin.badger-builder:
+    label: Badger Builder
+    actions:
+      read:
+        label: Read Access
+      write:
+        label: Write Access

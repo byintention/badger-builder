@@ -1,0 +1,416 @@
+/* Badger Builder — Admin2 sections field only.
+   Loaded lazily by sections.js (_ensureStylesheet). Not used on the public site.
+   Scoped to grav-badger-builder--sections custom element. */
+
+grav-badger-builder--sections .bb-admin-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-sections-add {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+grav-badger-builder--sections .bb-admin-add-select {
+    max-width: 14rem;
+}
+
+grav-badger-builder--sections .bb-admin-card {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    background: var(--background, #fff);
+    overflow: hidden;
+}
+
+grav-badger-builder--sections .bb-admin-card.is-dragging {
+    opacity: 0.5;
+}
+
+grav-badger-builder--sections .bb-admin-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--muted, #f9fafb);
+}
+
+grav-badger-builder--sections .bb-admin-drag {
+    cursor: grab;
+    border: 0;
+    background: transparent;
+    color: var(--muted-foreground, #6b7280);
+    padding: 4px;
+    font-size: 14px;
+}
+
+grav-badger-builder--sections .bb-admin-list-drag {
+    cursor: grab;
+    border: 0;
+    background: transparent;
+    color: var(--muted-foreground, #6b7280);
+    padding: 2px 4px;
+    font-size: 14px;
+    margin-right: 4px;
+}
+
+grav-badger-builder--sections .bb-admin-card-toggle {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    padding: 4px 0;
+    font-family: inherit;
+}
+
+grav-badger-builder--sections .bb-admin-card-title {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+grav-badger-builder--sections .bb-admin-card-summary {
+    display: block;
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+grav-badger-builder--sections .bb-admin-card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+grav-badger-builder--sections .bb-admin-card-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+grav-badger-builder--sections .bb-admin-field-quarters {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-field-quarter {
+    flex: 1 1 calc(25% - 9px);
+    min-width: 10rem;
+}
+
+grav-badger-builder--sections .bb-admin-field-halves {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-field-half {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 12rem;
+}
+
+grav-badger-builder--sections .bb-admin-field-thirds {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-field-third {
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 10rem;
+}
+
+grav-badger-builder--sections .bb-admin-field-nested {
+    padding-left: 8px;
+    border-left: 2px solid var(--border, #e5e7eb);
+}
+
+grav-badger-builder--sections .bb-admin-list-split {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+grav-badger-builder--sections .bb-admin-list-split .bb-admin-field-nested {
+    padding-left: 0;
+    border-left: 0;
+}
+
+grav-badger-builder--sections .bb-admin-list-col-wide {
+    flex: 1 1 calc(66% - 6px);
+    min-width: 12rem;
+}
+
+grav-badger-builder--sections .bb-admin-list-col-narrow {
+    flex: 1 1 calc(34% - 6px);
+    min-width: 8rem;
+}
+
+grav-badger-builder--sections .bb-admin-list-col-half {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 10rem;
+}
+
+grav-badger-builder--sections .bb-admin-list-col-half.bb-admin-field-modern,
+grav-badger-builder--sections .bb-admin-list-col-half .bb-admin-field-modern {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+}
+
+grav-badger-builder--sections .bb-admin-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--foreground, #374151);
+}
+
+grav-badger-builder--sections .bb-admin-help {
+    font-size: 11px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+grav-badger-builder--sections .bb-admin-input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--background, #fff);
+    color: var(--foreground, #111);
+}
+
+grav-badger-builder--sections .bb-admin-range {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-range-input {
+    flex: 1;
+    min-width: 0;
+}
+
+grav-badger-builder--sections .bb-admin-range-value {
+    flex-shrink: 0;
+    min-width: 3rem;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--foreground, #374151);
+    text-align: right;
+}
+
+grav-badger-builder--sections .bb-admin-textarea {
+    resize: vertical;
+    min-height: 4rem;
+}
+
+grav-badger-builder--sections .bb-admin-field-modern {
+    gap: 8px;
+    min-width: 0;
+}
+
+grav-badger-builder--sections .bb-admin-field-modern grav-modern-editor--moderneditor {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+grav-badger-builder--sections .bb-admin-list-col-wide .bb-admin-field-modern,
+grav-badger-builder--sections .bb-admin-list-col-wide.bb-admin-field-modern {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+grav-badger-builder--sections .bb-admin-btn {
+    appearance: none;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--background, #fff);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--foreground, #111);
+}
+
+grav-badger-builder--sections .bb-admin-btn-primary {
+    background: var(--primary, #2563eb);
+    border-color: var(--primary, #2563eb);
+    color: var(--primary-foreground, #fff);
+}
+
+grav-badger-builder--sections .bb-admin-btn-ghost {
+    border-color: transparent;
+    background: transparent;
+}
+
+grav-badger-builder--sections .bb-admin-btn-danger {
+    color: var(--destructive, #dc2626);
+}
+
+grav-badger-builder--sections .bb-admin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-list-item {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-list-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    gap: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-list-item-head > span {
+    flex: 1;
+    min-width: 0;
+}
+
+grav-badger-builder--sections .bb-admin-list-item.is-dragging {
+    opacity: 0.55;
+}
+
+grav-badger-builder--sections .bb-admin-list-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-list-empty {
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+    padding: 8px 0;
+}
+
+grav-badger-builder--sections .bb-admin-field-media {
+    gap: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-media-preview {
+    display: flex;
+    align-items: center;
+    min-height: 3rem;
+    padding: 8px;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    background: var(--muted, #f9fafb);
+}
+
+grav-badger-builder--sections .bb-admin-media-preview-img {
+    max-height: 4rem;
+    max-width: 100%;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+grav-badger-builder--sections .bb-admin-media-preview-file,
+grav-badger-builder--sections .bb-admin-media-preview-empty {
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+grav-badger-builder--sections .bb-admin-media-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+grav-badger-builder--sections .bb-admin-media-picker {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    padding: 8px;
+    background: var(--background, #fff);
+}
+
+grav-badger-builder--sections .bb-admin-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+    gap: 6px;
+    max-height: 14rem;
+    overflow: auto;
+}
+
+grav-badger-builder--sections .bb-admin-media-item {
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--muted, #f3f4f6);
+}
+
+grav-badger-builder--sections .bb-admin-media-item.is-selected {
+    border-color: var(--primary, #2563eb);
+}
+
+grav-badger-builder--sections .bb-admin-media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+grav-badger-builder--sections .bb-admin-media-status {
+    padding: 8px;
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+grav-badger-builder--sections .bb-admin-media-status-error {
+    color: var(--destructive, #dc2626);
+}
+
+grav-badger-builder--sections .bb-admin-status {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+grav-badger-builder--sections .bb-admin-status-error {
+    color: var(--destructive, #dc2626);
+}
+
+grav-badger-builder--sections .bb-admin-error {
+    color: var(--destructive, #dc2626);
+    font-size: 13px;
+}

@@ -1,0 +1,35 @@
+{% set id = 'panel-' ~ index %}
+{% set bg = section.features_background|default('transparent') %}
+{% if bg == 'none' %}{% set bg = 'transparent' %}{% endif %}
+
+<section id="{{ id|e('html_attr') }}" class="bb-section bb-panel-features bg-{{ bg|e('html_attr') }}">
+    <div class="bb-panel-features-inner">
+        {% if section.features %}
+            <div class="bb-panel-features-grid">
+                {% for feature in section.features %}
+                    <article class="bb-panel-features-item">
+                        {% if feature.url %}
+                            <a class="bb-panel-features-link" href="{{ feature.url|e('html_attr') }}">
+                        {% endif %}
+                        {% if feature.icon or feature.header %}
+                            <div class="bb-panel-features-icon">
+                                {% if feature.icon %}
+                                    <span class="bb-panel-features-icon-mark" aria-hidden="true">{{ feature.icon|e('html') }}</span>
+                                {% endif %}
+                                {% if feature.header %}
+                                    <h3 class="bb-panel-features-heading">{{ feature.header|e('html') }}</h3>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        {% if feature.text %}
+                            <p class="bb-panel-features-text">{{ feature.text|e('html')|nl2br }}</p>
+                        {% endif %}
+                        {% if feature.url %}
+                            </a>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>

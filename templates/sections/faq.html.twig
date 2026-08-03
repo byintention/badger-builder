@@ -1,0 +1,98 @@
+{% set id = 'panel-' ~ index %}
+{% set bg = section.faq_background|default('transparent') %}
+{% if bg == 'none' %}{% set bg = 'transparent' %}{% endif %}
+
+<section id="{{ id|e('html_attr') }}" class="faqs bb-panel-faq bg-{{ bg|e('html_attr') }}" itemscope="" itemtype="https://schema.org/FAQPage">
+    <div class="container">
+		<div class="faq-wrapper">
+			<div class="faq-question-wrapper">
+            {% if section.faq %}
+                {% for item in section.faq %}
+                    {% if item.title or item.content %}
+                        <div class="faq{% if loop.first %} active{% endif %}" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+                            <button class="showFaq" aria-expanded="false" aria-controls="faq-answer-{{ loop.index }}">Show answer</button>
+						    <h3 class="faq-question" data-questionid="faq-answer-{{ loop.index }}" itemprop="name">{% if item.title %}{{ item.title|e('html') }}{% endif %}</h3>                
+						    <div id="faq-answer-{{ loop.index }}" class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"> 
+                                {% if item.content %}
+							    {{ item.content|bb_markdown|raw }}
+                                {% endif %}
+						    </div>  
+                        </div>
+                    {% endif %}
+                {% endfor %}   
+            {% endif %}
+            </div>
+            <div class="faq-answers-wrapper">
+            {% if section.faq %}
+                {% for item in section.faq %}
+                {% if item.title or item.content %}    
+                <div class="faq {% if loop.first %} active{% endif %}" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">	
+                    <div id="faq-answer-{{ loop.index }}" class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"> 
+                        <h4>{% if item.title %}{{ item.title|e('html') }}{% endif %}</h4>
+                        {% if item.content %}
+						{{ item.content|bb_markdown|raw }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}   
+            {% endif %}
+            </div>
+        
+        </div>
+    </div>
+</section>
+
+
+<!--
+<section id="panel<?php echo esc_attr( $counter ); ?>" class="faqs <?php echo esc_attr( get_sub_field( 'background' ) ); ?> <?php echo esc_attr( get_sub_field( 'classes' ) ); ?>" itemscope="" itemtype="https://schema.org/FAQPage">
+	<div class="container">
+		<div class="faq-wrapper">
+			<div class="faq-question-wrapper">
+				<?php
+				if ( have_rows( 'faqs' ) ) {
+					$faq_no = 1;
+					while ( have_rows( 'faqs' ) ) :
+						the_row();
+						?>
+					<div class="faq<?php echo ( 1 === $faq_no ) ? ' active' : ''; ?>" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+						<button class="showFaq" aria-expanded="false" aria-controls="faq-answer-<?php echo esc_attr( $faq_no ); ?>">Show answer</button>		
+						<h3 class="faq-question" data-questionid="faq-answer-<?php echo esc_attr( $faq_no ); ?>" itemprop="name"><?php echo esc_html( get_sub_field( 'faq_question' ) ); ?></h3>	
+						<div id="faq-answer-<?php echo esc_attr( $faq_no ); ?>" class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"> 
+							<?php echo wp_kses_post( get_sub_field( 'faq_answer' ) ); ?>
+						</div>
+					</div>
+						<?php
+						++$faq_no;
+					endwhile;
+				} else {
+					?>
+						<p class="negative">Please add some FAQs!</p>
+				<?php } ?>
+			</div>
+			<div class="faq-answers-wrapper">
+			<?php
+				if ( have_rows( 'faqs' ) ) {
+					$faq_no = 1;
+					while ( have_rows( 'faqs' ) ) :
+						the_row();
+						?>
+					<div class="faq <?php echo ( 1 === $faq_no ) ? ' active' : ''; ?>" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+						
+						<div id="faq-answer-<?php echo esc_attr( $faq_no ); ?>" class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"> 
+							<h4><?php echo esc_html( get_sub_field( 'faq_question' ) ); ?></h4>
+							<?php echo wp_kses_post( get_sub_field( 'faq_answer' ) ); ?>
+						</div>
+					</div>
+						<?php
+						++$faq_no;
+					endwhile;
+				} else {
+					?>
+						<p class="negative">Please add some FAQs!</p>
+				<?php } ?>
+			</div>
+		</div>
+	</div>
+</section>
+-->

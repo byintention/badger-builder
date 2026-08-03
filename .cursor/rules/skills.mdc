@@ -1,0 +1,30 @@
+---
+description: Read project skills in .cursor/skills before any implementation work
+alwaysApply: true
+---
+
+# Project skills
+
+Before **any implementation** in this repo, read every file in [`.cursor/skills/`](../skills/) and decide which apply from each file's `description` in the frontmatter.
+
+Do not skip this step for "small" changes. Question-only or review-only tasks do not require reading skills unless they touch integration patterns below.
+
+## Which skill to follow
+
+| Task | Skill file |
+|------|------------|
+| REST API endpoints only (no Admin Next UI) | [`grav-api-integration.md`](../skills/grav-api-integration.md) |
+| Admin2 / `onApi*` / `admin-next/` / blueprint hooks / custom fields / widgets | [`grav-api-admin-next-integration.md`](../skills/grav-api-admin-next-integration.md) |
+
+Use the **narrowest** match: if the task is API-only, use `grav-api-integration`. If it includes any Admin Next surface, use `grav-api-admin-next-integration` (it covers API patterns too).
+
+## Workflow
+
+1. List and read applicable skill(s) in full before writing code.
+2. Follow that skill's steps (analyze → implement → test; Section K config audit when admin UI is involved).
+3. Keep changes in this plugin directory per [scope-badger-builder.mdc](scope-badger-builder.mdc).
+
+## Related rules
+
+- [grav-core.mdc](grav-core.mdc) — never modify `system/` or `vendor/`
+- [changelog.mdc](changelog.mdc) — append task summary to `.cursor/notes/changelog.md` when a task is completed

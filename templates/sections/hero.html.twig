@@ -1,0 +1,17 @@
+{% set id = 'panel-' ~ index %}
+{% set image = section.hero_image ? page.media[section.hero_image] : null %}
+{% set align = section.hero_align|default('center') %}
+{% set bg = section.hero_background|default('transparent') %}
+{% if bg == 'none' %}{% set bg = 'transparent' %}{% endif %}
+
+<section id="{{ id|e('html_attr') }}" class="bb-section bb-panel-hero bg-{{ bg|e('html_attr') }} bb-panel-hero-align-{{ align|e('html_attr') }}{% if image %} bb-panel-hero-has-image{% endif %}"{% if image %} style="background-image: url('{{ image.url|e('html_attr') }}')"{% endif %}>
+    {% if image %}<div class="bb-panel-hero-overlay" aria-hidden="true"></div>{% endif %}
+    <div class="bb-panel-hero-inner">
+        {% if section.hero_title %}
+            <h1 class="bb-panel-hero-title">{{ section.hero_title|e('html') }}</h1>
+        {% endif %}
+        {% if section.hero_body %}
+            <div class="bb-panel-hero-body">{{ section.hero_body|bb_markdown|raw }}</div>
+        {% endif %}
+    </div>
+</section>

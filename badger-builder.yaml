@@ -1,0 +1,12 @@
+enabled: true
+enabled_panels:
+  - hero
+  - features
+  - text
+  - full
+  - filler
+  - boxes
+  - faq
+default_panel: text
+show_panel_labels: true
+built_in_css: true

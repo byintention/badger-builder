@@ -1,0 +1,19 @@
+---
+description: Append to this repo's .cursor/notes/changelog.md after completing a task
+alwaysApply: true
+---
+
+# Changelog
+
+After completing a task, add an entry to [`.cursor/notes/changelog.md`](../notes/changelog.md) in **this repository**:
+
+```
+YYYY-MM-DD
+Summary in up to 30 words
+```
+
+- Use **today's actual date** (check with `date +%Y-%m-%d` or the environment date — do not reuse an old date from conversation context or prior changelog entries)
+- Keep the summary to 30 words
+- Two lines per task completed — first line is the date, second line is the summary
+- Append to the start of the file; do not rewrite existing entries
+- Do **not** write to parent `grav-admin/.cursor/notes/changelog.md`

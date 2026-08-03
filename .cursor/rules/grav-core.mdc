@@ -1,0 +1,30 @@
+---
+description: Grav core boundaries — never modify system/ or vendor/
+alwaysApply: true
+---
+
+# Grav core boundaries
+
+This plugin runs on **Grav 2.0.0-rc.4**. Treat upstream core as read-only.
+
+## Never modify core Grav files
+
+Do **not** edit, delete, or add files under:
+
+| Path | What it is |
+|------|------------|
+| `system/` | Grav core (PHP, blueprints, default assets) |
+| `vendor/` | Composer dependencies (including Grav packages) |
+
+Also avoid hand-editing root bootstrap files unless the user explicitly asks: `index.php`, `composer.json`, `composer.lock`, and core CLI scripts under `bin/` (e.g. `bin/grav`, `bin/gpm`).
+
+If a fix seems to require a core change, stop and use a **user-layer** approach instead (plugin hooks, blueprint overrides, or theme integration).
+
+## Plugin patterns
+
+- **Behavior** → `badger-builder.php`, `classes/`, API controllers
+- **Admin Next UI** → `admin-next/` web components and custom fields
+- **Admin forms** → `blueprints.yaml`, `blueprints/pages/`
+- **Presentation** → `templates/`, `assets/`
+
+When upgrading Grav via GPM, core and `vendor/` are replaced; this plugin directory is what you own.

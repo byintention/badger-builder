@@ -1,0 +1,43 @@
+---
+description: Badger Builder conventions — CSS split, class naming, new panels
+alwaysApply: true
+---
+
+# Badger Builder conventions
+
+Canonical product-workspace copy. When editing this plugin from the `grav-admin/` integration root, the parent rule [`.cursor/rules/badger-builder.mdc`](../../../../.cursor/rules/badger-builder.mdc) mirrors these points via globs.
+
+## CSS
+
+Keep styles in `assets/css/` — do **not** add inline `<style>` in JS unless explicitly requested.
+
+| File | Purpose | Loaded by |
+|------|---------|-----------|
+| `assets/css/badger-builder.css` | Front-end section styles | `badger-builder.php` on public `badger-builder` pages when `built_in_css` is enabled |
+| `assets/css/badger-builder-admin.css` | Admin2 sections field | `sections.js` `_ensureStylesheet()` when the field connects |
+
+### Class naming
+
+Use single-hyphen names only (no BEM `__` or `--`):
+
+- Shared: `bb-section`, `bb-main`, `bb-btn` (markdown inline buttons)
+- Front-end panels: `bb-panel-{type}`, `bb-panel-{type}-{element}`, modifiers as suffixes e.g. `bb-panel-filler-small`, `bb-panel-hero-align-left`
+- Panel backgrounds: `bg-transparent` (plugin) plus theme utilities `bg-{slug}` from the active theme colours list
+- Admin2 editor: `bb-admin-*` e.g. `bb-admin-card`, `bb-admin-field`, `bb-admin-field-quarter`
+
+Admin CSS is lazy-loaded only in Admin2; public pages never download it.
+
+## Panels
+
+Panel schemas live in `classes/PanelRegistry.php`. Prefer `backgroundField()` for background colour selects. The panels API enriches options from the active theme’s `colours` via `withBackgroundOptions()`.
+
+### New panel checklist
+
+1. `PanelRegistry.php` — schema + defaults
+2. `templates/sections/{id}.html.twig` — markup; use `bg-{{ bg }}` (default `transparent`) when applicable
+3. `assets/css/badger-builder.css` — front-end styles
+4. `badger-builder.yaml` + `blueprints.yaml` — enable in defaults and plugin settings
+5. `README.md` — panel table / sample YAML
+6. `admin-next/fields/sections.js` (+ admin CSS) — only if the editor needs a custom field row or new field type
+
+See [AGENTS.md](../../AGENTS.md) for Admin2, markdown, and theme-integration notes.
