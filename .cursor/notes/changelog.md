@@ -1,4 +1,13 @@
 
+2026-08-03
+Section list Remove link replaced with Admin2-style trash icon delete button.
+
+2026-08-03
+Moved section Twig into theme badger-builder/templates/sections; plugin registers that path.
+
+2026-08-03
+Phase 1 Local YAML: panel schemas in panels/*.yaml; PanelLoader merges plugin → data → theme.
+
 2026-07-23
 Modern Editor stores HTML (not Markdown); bb_markdown passes through HTML and still parses legacy Markdown.
 

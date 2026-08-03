@@ -131,6 +131,17 @@ grav-badger-builder--sections .bb-admin-field-halves {
 grav-badger-builder--sections .bb-admin-field-half {
     flex: 1 1 calc(50% - 6px);
     min-width: 12rem;
+    max-width: calc(50% - 6px);
+    box-sizing: border-box;
+}
+
+/* Modern Editor / media in text panel halves — keep 50% despite ME flex overrides */
+grav-badger-builder--sections .bb-admin-field-halves > .bb-admin-field-half.bb-admin-field-modern,
+grav-badger-builder--sections .bb-admin-field-halves > .bb-admin-field-half.bb-admin-field-media {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+    max-width: calc(50% - 6px);
+    width: auto;
 }
 
 grav-badger-builder--sections .bb-admin-field-thirds {
@@ -174,14 +185,21 @@ grav-badger-builder--sections .bb-admin-list-col-narrow {
 
 grav-badger-builder--sections .bb-admin-list-col-half {
     flex: 1 1 calc(50% - 6px);
-    min-width: 10rem;
+    min-width: 0;
+    max-width: calc(50% - 6px);
+    box-sizing: border-box;
 }
 
 grav-badger-builder--sections .bb-admin-list-col-half.bb-admin-field-modern,
 grav-badger-builder--sections .bb-admin-list-col-half .bb-admin-field-modern {
-    flex: 1 1 auto;
+    flex: 1 1 calc(50% - 6px);
     min-width: 0;
-    width: 100%;
+    max-width: calc(50% - 6px);
+    width: auto;
+}
+
+grav-badger-builder--sections .bb-admin-field-list-faq .bb-admin-list-split {
+    flex-wrap: nowrap;
 }
 
 grav-badger-builder--sections .bb-admin-label {
@@ -242,6 +260,9 @@ grav-badger-builder--sections .bb-admin-field-modern grav-modern-editor--moderne
     min-width: 0;
 }
 
+/* TinyMCE (.tox-tinymce) lives inside Modern Editor's shadow root — border
+   override is injected from sections.js (_injectToxNoBorder), not here. */
+
 grav-badger-builder--sections .bb-admin-list-col-wide .bb-admin-field-modern,
 grav-badger-builder--sections .bb-admin-list-col-wide.bb-admin-field-modern {
     flex: 1 1 auto;
@@ -273,6 +294,39 @@ grav-badger-builder--sections .bb-admin-btn-ghost {
 
 grav-badger-builder--sections .bb-admin-btn-danger {
     color: var(--destructive, #dc2626);
+}
+
+/* Match Admin2 pages-list delete control (icon button + trash) */
+grav-badger-builder--sections .bb-admin-icon-btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--muted-foreground, #737373);
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+grav-badger-builder--sections .bb-admin-icon-btn:hover {
+    background: color-mix(in srgb, var(--destructive, #dc2626) 10%, transparent);
+    color: var(--destructive, #dc2626);
+}
+
+grav-badger-builder--sections .bb-admin-icon-btn-delete:hover {
+    background: color-mix(in srgb, var(--destructive, #dc2626) 10%, transparent);
+    color: var(--destructive, #dc2626);
+}
+
+grav-badger-builder--sections .bb-admin-icon-btn svg {
+    display: block;
+    pointer-events: none;
 }
 
 grav-badger-builder--sections .bb-admin-list {
@@ -315,6 +369,23 @@ grav-badger-builder--sections .bb-admin-list-head {
     gap: 8px;
 }
 
+grav-badger-builder--sections .bb-admin-list-foot {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+grav-badger-builder--sections .bb-admin-btn-purple {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: #fff;
+}
+
+grav-badger-builder--sections .bb-admin-btn-purple:hover {
+    background: #6d28d9;
+    border-color: #6d28d9;
+}
+
 grav-badger-builder--sections .bb-admin-list-empty {
     font-size: 12px;
     color: var(--muted-foreground, #6b7280);
@@ -328,11 +399,13 @@ grav-badger-builder--sections .bb-admin-field-media {
 grav-badger-builder--sections .bb-admin-media-preview {
     display: flex;
     align-items: center;
+    justify-content: center;
     min-height: 3rem;
     padding: 8px;
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 6px;
     background: var(--muted, #f9fafb);
+    overflow: hidden;
 }
 
 grav-badger-builder--sections .bb-admin-media-preview-img {
@@ -340,6 +413,16 @@ grav-badger-builder--sections .bb-admin-media-preview-img {
     max-width: 100%;
     border-radius: 4px;
     object-fit: contain;
+}
+
+grav-badger-builder--sections .bb-admin-field-half .bb-admin-media-preview {
+    min-height: 10rem;
+    align-self: stretch;
+}
+
+grav-badger-builder--sections .bb-admin-field-half .bb-admin-media-preview-img {
+    max-height: 14rem;
+    width: 100%;
 }
 
 grav-badger-builder--sections .bb-admin-media-preview-file,

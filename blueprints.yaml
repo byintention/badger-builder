@@ -69,6 +69,23 @@ form:
     built_in_css:
       type: toggle
       label: PLUGIN_BADGER_BUILDER.BUILT_IN_CSS
+      highlight: 0
+      default: 0
+      options:
+        1: PLUGIN_ADMIN.YES
+        0: PLUGIN_ADMIN.NO
+      validate:
+        type: bool
+
+    local_panels_section:
+      type: section
+      title: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_SECTION
+      underline: true
+
+    local_panels.enabled:
+      type: toggle
+      label: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_ENABLED
+      help: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_ENABLED_HELP
       highlight: 1
       default: 1
       options:
@@ -76,3 +93,15 @@ form:
         0: PLUGIN_ADMIN.NO
       validate:
         type: bool
+
+    local_panels.theme_path:
+      type: text
+      label: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_THEME_PATH
+      help: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_THEME_PATH_HELP
+      default: badger-builder/panels
+
+    local_panels.data_path:
+      type: text
+      label: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_DATA_PATH
+      help: PLUGIN_BADGER_BUILDER.LOCAL_PANELS_DATA_PATH_HELP
+      default: badger-builder/panels

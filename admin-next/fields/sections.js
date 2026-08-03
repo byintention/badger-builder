@@ -30,6 +30,8 @@ class SectionsField extends HTMLElement {
         this._pageMedia = [];
         this._mediaLoading = false;
         this._mediaError = null;
+        this._pageMediaWarmed = false;
+        this._mediaWarming = false;
         /** @type {string|null} */
         this._modernEditorTag = null;
     }
@@ -114,6 +116,7 @@ class SectionsField extends HTMLElement {
         } finally {
             this._loading = false;
             this._render();
+            this._warmPageMedia();
         }
     }
 
@@ -296,6 +299,45 @@ class SectionsField extends HTMLElement {
             });
 
             host.appendChild(el);
+            this._injectToxNoBorder(el);
+        });
+    }
+
+    /**
+     * Modern Editor mounts TinyMCE inside an open shadow root, so document CSS
+     * cannot target .tox-tinymce. Inject a small override into the shadow.
+     */
+    _injectToxNoBorder(el) {
+        const inject = () => {
+            const root = el.shadowRoot;
+            if (!root) {
+                return false;
+            }
+            if (root.querySelector('style[data-bb-tox]')) {
+                return true;
+            }
+            const style = document.createElement('style');
+            style.setAttribute('data-bb-tox', '1');
+            style.textContent = '.tox-tinymce { border: none !important; }';
+            root.appendChild(style);
+            return true;
+        };
+
+        if (inject()) {
+            return;
+        }
+
+        queueMicrotask(() => {
+            if (inject()) {
+                return;
+            }
+            const obs = new MutationObserver(() => {
+                if (inject()) {
+                    obs.disconnect();
+                }
+            });
+            obs.observe(el, { childList: true, subtree: true });
+            setTimeout(() => obs.disconnect(), 3000);
         });
     }
 
@@ -411,17 +453,18 @@ class SectionsField extends HTMLElement {
 
     _mediaItem(filename) {
         if (!filename) return null;
-        return this._pageMedia.find((m) => m.filename === filename) || null;
+        const base = String(filename).split('/').pop();
+        return this._pageMedia.find((m) => m.filename === filename || m.filename === base) || null;
     }
 
-    async _loadPageMedia() {
+    async _loadPageMedia({ silent = false } = {}) {
         const route = this._pageMediaApiRoute();
         if (!route) {
             this._mediaError = 'Save the page first, then pick from Page Media on the Content tab.';
             this._pageMedia = [];
             return;
         }
-        this._mediaLoading = true;
+        if (!silent) this._mediaLoading = true;
         this._mediaError = null;
         try {
             const resp = await fetch(this._apiPath(`/pages/${encodeURI(route)}/media`), {
@@ -431,11 +474,24 @@ class SectionsField extends HTMLElement {
             const json = await resp.json();
             const items = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
             this._pageMedia = items.filter((m) => String(m.type || '').startsWith('image/'));
+            this._pageMediaWarmed = true;
         } catch (e) {
             this._mediaError = e.message || String(e);
             this._pageMedia = [];
         } finally {
-            this._mediaLoading = false;
+            if (!silent) this._mediaLoading = false;
+        }
+    }
+
+    /** Prefetch page media so selected images show a thumbnail without opening the picker. */
+    async _warmPageMedia() {
+        if (this._mediaWarming || this._pageMediaWarmed) return;
+        this._mediaWarming = true;
+        try {
+            await this._loadPageMedia({ silent: true });
+            if (this.isConnected && !this._loading) this._render();
+        } finally {
+            this._mediaWarming = false;
         }
     }
 
@@ -647,18 +703,26 @@ class SectionsField extends HTMLElement {
     }
 
     // ─── Field editors ───────────────────────────────────────────────────────
-    _renderPageMediaField(index, section, field) {
+    _renderPageMediaField(index, section, field, opts = {}) {
         const name = field.name;
         const val = section[name] || '';
         const label = field.label || name;
         const help = field.help ? `<span class="bb-admin-help">${this._escape(field.help)}</span>` : '';
+        const width = opts.width ?? field.width;
+        const rowClass = width === 'quarter'
+            ? 'bb-admin-field bb-admin-field-quarter bb-admin-field-media'
+            : width === 'half'
+                ? 'bb-admin-field bb-admin-field-half bb-admin-field-media'
+                : width === 'third'
+                    ? 'bb-admin-field bb-admin-field-third bb-admin-field-media'
+                    : 'bb-admin-field bb-admin-field-media';
         const pickerKey = `${index}:${name}`;
         const open = this._mediaPickerOpen === pickerKey;
         const item = this._mediaItem(val);
         const thumb = item?.thumbnail_url || item?.url || '';
         const preview = val
             ? (thumb
-                ? `<img class="bb-admin-media-preview-img" src="${this._escape(thumb)}" alt="" />`
+                ? `<img class="bb-admin-media-preview-img" src="${this._escape(thumb)}" alt="${this._escape(val)}" />`
                 : `<span class="bb-admin-media-preview-file">${this._escape(val)}</span>`)
             : `<span class="bb-admin-media-preview-empty">No image selected</span>`;
 
@@ -673,7 +737,7 @@ class SectionsField extends HTMLElement {
             } else {
                 pickerBody = `<div class="bb-admin-media-grid">${this._pageMedia.map((m) => {
                     const src = m.thumbnail_url || m.url || '';
-                    const selected = m.filename === val ? ' is-selected' : '';
+                    const selected = m.filename === val || m.filename === String(val).split('/').pop() ? ' is-selected' : '';
                     return `
                         <button type="button" class="bb-admin-media-item${selected}" data-action="media-pick"
                             data-index="${index}" data-name="${this._escape(name)}"
@@ -686,7 +750,7 @@ class SectionsField extends HTMLElement {
         }
 
         return `
-            <div class="bb-admin-field bb-admin-field-media">
+            <div class="${rowClass}">
                 <label class="bb-admin-label">${this._escape(label)}</label>
                 ${help}
                 <div class="bb-admin-media-preview">${preview}</div>
@@ -750,7 +814,7 @@ class SectionsField extends HTMLElement {
                     : 'bb-admin-field';
 
         if (field.type === 'page_media') {
-            return this._renderPageMediaField(index, section, field);
+            return this._renderPageMediaField(index, section, field, opts);
         }
 
         if (field.type === 'select') {
@@ -813,13 +877,37 @@ class SectionsField extends HTMLElement {
                         <div class="bb-admin-list-item-head">
                             <button type="button" class="bb-admin-list-drag" draggable="true" title="Drag to reorder" aria-label="Drag handle">⋮⋮</button>
                             <span>Item ${li + 1}</span>
-                            <button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="list-remove"
-                                data-index="${index}" data-name="${this._escape(name)}" data-li="${li}">Remove</button>
+                            <button type="button" class="bb-admin-icon-btn bb-admin-icon-btn-delete" data-action="list-remove"
+                                data-index="${index}" data-name="${this._escape(name)}" data-li="${li}" title="Delete" aria-label="Delete item">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                    <line x1="10" x2="10" y1="11" y2="17"></line>
+                                    <line x1="14" x2="14" y1="11" y2="17"></line>
+                                </svg>
+                            </button>
                         </div>
                         ${subHtml}
                     </div>
                 `;
             }).join('');
+
+            if (name === 'faq') {
+                return `
+                    <div class="bb-admin-field bb-admin-field-list bb-admin-field-list-faq">
+                        <div class="bb-admin-list-head">
+                            <label class="bb-admin-label">${this._escape(label)}</label>
+                        </div>
+                        ${help}
+                        <div class="bb-admin-list">${itemsHtml || '<div class="bb-admin-list-empty">No items yet.</div>'}</div>
+                        <div class="bb-admin-list-foot">
+                            <button type="button" class="bb-admin-btn bb-admin-btn-purple" data-action="list-add"
+                                data-index="${index}" data-name="${this._escape(name)}">Add item</button>
+                        </div>
+                    </div>
+                `;
+            }
 
             return `
                 <div class="bb-admin-field bb-admin-field-list">
@@ -893,6 +981,12 @@ class SectionsField extends HTMLElement {
             fieldsHtml = `<div class="bb-admin-field bb-admin-field-halves">
                 ${fields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
             </div>`;
+        } else if (panelId === 'text' && panel) {
+            const fields = panel.fields || [];
+            // Row 1: body + image; row 2: background + align (all half-width, wraps).
+            fieldsHtml = `<div class="bb-admin-field bb-admin-field-halves bb-admin-field-halves-text">
+                ${fields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
+            </div>`;
         } else if (panelId === 'full' && panel) {
             const fields = panel.fields || [];
             const mainFields = fields.filter((f) => f.width !== 'third');
@@ -920,7 +1014,15 @@ class SectionsField extends HTMLElement {
                     <div class="bb-admin-card-actions">
                         <button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="up" data-index="${index}" title="Move up">↑</button>
                         <button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="down" data-index="${index}" title="Move down">↓</button>
-                        <button type="button" class="bb-admin-btn bb-admin-btn-ghost bb-admin-btn-danger" data-action="remove" data-index="${index}">Remove</button>
+                        <button type="button" class="bb-admin-icon-btn bb-admin-icon-btn-delete" data-action="remove" data-index="${index}" title="Delete" aria-label="Delete section">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                <line x1="10" x2="10" y1="11" y2="17"></line>
+                                <line x1="14" x2="14" y1="11" y2="17"></line>
+                            </svg>
+                        </button>
                     </div>
                 </header>
                 ${expanded ? `

@@ -3,6 +3,13 @@ PLUGIN_BADGER_BUILDER:
   DEFAULT_PANEL: Default panel for new sections
   SHOW_PANEL_LABELS: Show panel names in the editor
   BUILT_IN_CSS: Load Badger Builder front-end CSS
+  LOCAL_PANELS_SECTION: Local YAML panels
+  LOCAL_PANELS_ENABLED: Load theme and data panel YAML
+  LOCAL_PANELS_ENABLED_HELP: 'When enabled, merge panel schemas from plugin → user/data → active theme (last wins). Plugin builtins always load.'
+  LOCAL_PANELS_THEME_PATH: Theme panels path
+  LOCAL_PANELS_THEME_PATH_HELP: 'Relative to the active theme root (e.g. badger-builder/panels).'
+  LOCAL_PANELS_DATA_PATH: Data panels path
+  LOCAL_PANELS_DATA_PATH_HELP: 'Relative to user/data (e.g. badger-builder/panels).'
   SECTIONS: Page sections
   SECTIONS_HELP: Add, remove, and reorder flexible content sections.
   SITE_META: Site meta

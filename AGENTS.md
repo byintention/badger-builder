@@ -34,14 +34,16 @@ No inline `<style>` in JS unless the user asks. Class names: single hyphens only
 
 ### New panel checklist
 
-1. Add schema in [`classes/PanelRegistry.php`](classes/PanelRegistry.php) (fields, defaults, optional `width`: `quarter` / `half` / `third`).
-2. Add Twig partial [`templates/sections/{id}.html.twig`](templates/sections/) — use `bg-{{ bg }}` (theme colour slug) when the panel has a background field; default `transparent`, alias legacy `none` → `transparent`.
-3. Add front-end styles in `badger-builder.css`.
-4. Register in plugin defaults [`badger-builder.yaml`](badger-builder.yaml) and admin options [`blueprints.yaml`](blueprints.yaml) (`enabled_panels` / `default_panel`).
+1. Add schema YAML in [`panels/{id}.yaml`](panels/) (fields, defaults, optional `width`: `quarter` / `half` / `third`). Theme overrides: active theme `badger-builder/panels/{id}.yaml` (whole panel replace by `id`).
+2. Add Twig partial under the active theme at `badger-builder/templates/sections/{id}.html.twig` — use `bg-{{ bg }}` (theme colour slug) when the panel has a background field; default `transparent`, alias legacy `none` → `transparent`. (Plugin registers that Twig path ahead of its own templates.)
+3. Add front-end styles in `badger-builder.css` and/or the active theme CSS.
+4. Register in plugin defaults [`badger-builder.yaml`](badger-builder.yaml) and admin options [`blueprints.yaml`](blueprints.yaml) (`enabled_panels` / `default_panel`). Custom theme panel ids: list them in site `user/config/plugins/badger-builder.yaml` → `enabled_panels`.
 5. Update [`README.md`](README.md) panel table and sample YAML if the data shape changed.
 6. If Admin2 layout needs a special field row (quarters/halves/thirds), update [`admin-next/fields/sections.js`](admin-next/fields/sections.js) `_renderSection` and admin CSS as needed.
 
-Shared background options: use `backgroundField()` in `PanelRegistry`. Options are **Transparent** plus the active theme’s `colours` list (API fills options via `withBackgroundOptions()`). Front-end class is `bg-{hyphenize(label)}`, matching theme utility classes.
+Shared background options: use a `*_background` select field in panel YAML (placeholder `transparent` option). The panels API fills options via `PanelRegistry::withBackgroundOptions()` from the active theme’s `colours` list. Front-end class is `bg-{hyphenize(label)}`, matching theme utility classes.
+
+Local YAML load order (last wins): plugin `panels/` → `user/data/{data_path}` → theme `{theme_path}`. See `local_panels` in plugin config. Loader: [`classes/PanelLoader.php`](classes/PanelLoader.php).
 
 ### Admin2 sections field
 
@@ -54,7 +56,8 @@ Shared background options: use `backgroundField()` in `PanelRegistry`. Options a
 ### Theme integration (do not edit themes here)
 
 - Page template [`templates/badger-builder.html.twig`](templates/badger-builder.html.twig) extends the **active theme’s** `partials/base.html.twig`.
-- Themes may override section markup via `templates/sections/{panel}.html.twig`.
+- Themes may override section markup via `badger-builder/templates/sections/{panel}.html.twig` (preferred) or legacy `templates/sections/{panel}.html.twig`.
+- Themes may override / add panel **schemas** via `badger-builder/panels/{id}.yaml` (Local YAML; see theme folder README).
 - Some themes wrap `{% block body %}` in a content container (e.g. UIkit `uk-container`). Full-bleed heroes may look constrained — that is a **theme** fix; describe it for the user or handle it in the Intention workspace.
 
 ### Markdown

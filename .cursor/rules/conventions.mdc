@@ -29,14 +29,14 @@ Admin CSS is lazy-loaded only in Admin2; public pages never download it.
 
 ## Panels
 
-Panel schemas live in `classes/PanelRegistry.php`. Prefer `backgroundField()` for background colour selects. The panels API enriches options from the active theme’s `colours` via `withBackgroundOptions()`.
+Panel schemas live in [`panels/*.yaml`](../../panels/) (builtins) and optional theme / `user/data` Local YAML. `PanelLoader` merges plugin → data → theme (whole panel replace by `id`). `PanelRegistry` exposes the merged set; the panels API enriches `*_background` selects from the active theme’s `colours` via `withBackgroundOptions()`.
 
 ### New panel checklist
 
-1. `PanelRegistry.php` — schema + defaults
-2. `templates/sections/{id}.html.twig` — markup; use `bg-{{ bg }}` (default `transparent`) when applicable
-3. `assets/css/badger-builder.css` — front-end styles
-4. `badger-builder.yaml` + `blueprints.yaml` — enable in defaults and plugin settings
+1. `panels/{id}.yaml` — schema + defaults (or theme `badger-builder/panels/{id}.yaml` to override/add)
+2. Theme `badger-builder/templates/sections/{id}.html.twig` — markup; use `bg-{{ bg }}` (default `transparent`) when applicable
+3. `assets/css/badger-builder.css` and/or theme CSS — front-end styles
+4. `badger-builder.yaml` + `blueprints.yaml` — enable in defaults and plugin settings (`enabled_panels`)
 5. `README.md` — panel table / sample YAML
 6. `admin-next/fields/sections.js` (+ admin CSS) — only if the editor needs a custom field row or new field type
 

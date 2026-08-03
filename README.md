@@ -39,7 +39,7 @@ Each section is rendered with an auto-generated HTML `id` (`panel-1`, `panel-2`,
 | `boxes` | Flex row of rich-text boxes with per-box and panel-level CSS classes |
 | `faq` | UIkit accordion of Title + rich Content items |
 
-Panel definitions live in `classes/PanelRegistry.php`. Plugin settings control which panels appear in the editor.
+Panel definitions live in `panels/*.yaml` (merged with optional theme / `user/data` Local YAML). Plugin settings control which panels appear in the editor (`enabled_panels`).
 
 ## API endpoints
 
@@ -52,7 +52,9 @@ Panel definitions live in `classes/PanelRegistry.php`. Plugin settings control w
 
 Public pages extend the active theme's `partials/base.html.twig` (header, footer, nav). Section markup uses plugin Twig partials and `.bb-*` CSS.
 
-To override section markup, add matching partials under your theme, e.g. `user/themes/mytheme/templates/sections/hero.html.twig` (Twig path precedence applies).
+To override section markup, place Twig under the active theme at `badger-builder/templates/sections/{id}.html.twig` (plugin registers this path). Legacy override via `templates/sections/{id}.html.twig` still works if present.
+
+To override or add panel **schemas** (ACF-style Local YAML), place files in the active theme at `badger-builder/panels/{id}.yaml`. Later load points win by `id`. New custom panel ids must also be listed in site `enabled_panels`. See that folder’s README on `thepractice-accrete`.
 
 Disable built-in CSS in plugin settings if your theme provides its own styles.
 

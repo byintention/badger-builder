@@ -9,4 +9,8 @@ enabled_panels:
   - faq
 default_panel: text
 show_panel_labels: true
-built_in_css: true
+built_in_css: false
+local_panels:
+  enabled: true
+  theme_path: badger-builder/panels
+  data_path: badger-builder/panels

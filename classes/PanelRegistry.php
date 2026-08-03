@@ -8,23 +8,24 @@ use Grav\Common\Grav;
 use Grav\Common\Inflector;
 
 /**
- * Single source of truth for section panel definitions.
+ * Section panel definitions — loaded from Local YAML via PanelLoader.
  */
 class PanelRegistry
 {
-    /** @var array<string, array<string, mixed>>|null */
-    private static ?array $panels = null;
-
     /**
      * @return array<string, array<string, mixed>>
      */
     public static function all(): array
     {
-        if (self::$panels === null) {
-            self::$panels = self::definePanels();
-        }
+        return PanelLoader::load();
+    }
 
-        return self::$panels;
+    /**
+     * Clear in-process cache after Local YAML changes.
+     */
+    public static function reset(): void
+    {
+        PanelLoader::reset();
     }
 
     /**
@@ -158,263 +159,5 @@ class PanelRegistry
         unset($panel);
 
         return $panels;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private static function backgroundField(string $name, string $default = 'transparent'): array
-    {
-        return [
-            'name' => $name,
-            'type' => 'select',
-            'label' => 'Background colour',
-            'default' => $default,
-            'options' => [
-                'transparent' => 'Transparent',
-            ],
-        ];
-    }
-
-    /**
-     * @return array<string, array<string, mixed>>
-     */
-    private static function definePanels(): array
-    {
-        return [
-            'hero' => [
-                'id' => 'hero',
-                'label' => 'Hero',
-                'twig' => 'hero',
-                'fields' => [
-                    [
-                        'name' => 'hero_title',
-                        'type' => 'text',
-                        'label' => 'Title',
-                    ],
-                    [
-                        'name' => 'hero_body',
-                        'type' => 'markdown',
-                        'label' => 'Body',
-                        'help' => 'Markdown and inline HTML supported.',
-                    ],
-                    [
-                        'name' => 'hero_image',
-                        'type' => 'page_media',
-                        'label' => 'Background image',
-                        'help' => 'Pick from this page\'s media (upload on the Content tab).',
-                    ],
-                    [
-                        'name' => 'hero_align',
-                        'type' => 'select',
-                        'label' => 'Text alignment',
-                        'default' => 'center',
-                        'width' => 'quarter',
-                        'options' => [
-                            'left' => 'Left',
-                            'center' => 'Center',
-                            'right' => 'Right',
-                        ],
-                    ],
-                    array_merge(self::backgroundField('hero_background'), ['width' => 'quarter']),
-                ],
-            ],
-            'features' => [
-                'id' => 'features',
-                'label' => 'Features grid',
-                'twig' => 'features',
-                'fields' => [
-                    self::backgroundField('features_background'),
-                    [
-                        'name' => 'features',
-                        'type' => 'list',
-                        'label' => 'Features',
-                        'fields' => [
-                            [
-                                'name' => 'header',
-                                'type' => 'text',
-                                'label' => 'Heading',
-                            ],
-                            [
-                                'name' => 'text',
-                                'type' => 'textarea',
-                                'label' => 'Text',
-                            ],
-                            [
-                                'name' => 'icon',
-                                'type' => 'text',
-                                'label' => 'Icon',
-                                'help' => 'Font Awesome icon name without fa- prefix (e.g. bolt)',
-                            ],
-                            [
-                                'name' => 'url',
-                                'type' => 'text',
-                                'label' => 'Link URL',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-            'text' => [
-                'id' => 'text',
-                'label' => 'Text + image',
-                'twig' => 'text',
-                'fields' => [
-                    self::backgroundField('text_background'),
-                    [
-                        'name' => 'text_body',
-                        'type' => 'markdown',
-                        'label' => 'Body',
-                        'help' => 'Markdown and inline HTML supported.',
-                    ],
-                    [
-                        'name' => 'text_image',
-                        'type' => 'page_media',
-                        'label' => 'Image',
-                        'help' => 'Pick from this page\'s media (upload on the Content tab).',
-                    ],
-                    [
-                        'name' => 'text_align',
-                        'type' => 'select',
-                        'label' => 'Textbox position',
-                        'default' => 'right',
-                        'options' => [
-                            'left' => 'left',
-                            'right' => 'right',
-                        ],
-                    ],
-                ],
-            ],
-            'full' => [
-                'id' => 'full',
-                'label' => 'Full width',
-                'twig' => 'full',
-                'fields' => [
-                    [
-                        'name' => 'full_body',
-                        'type' => 'markdown',
-                        'label' => 'Body',
-                        'help' => 'Markdown and inline HTML supported.',
-                    ],
-                    [
-                        'name' => 'full_overall_classes',
-                        'type' => 'text',
-                        'label' => 'Overall classes',
-                        'help' => 'Extra CSS classes on the outer section element.',
-                        'width' => 'third',
-                    ],
-                    array_merge(self::backgroundField('full_background'), ['width' => 'third']),
-                    [
-                        'name' => 'full_width',
-                        'type' => 'range',
-                        'label' => 'Container width',
-                        'default' => 100,
-                        'min' => 25,
-                        'max' => 100,
-                        'step' => 1,
-                        'unit' => '%',
-                        'width' => 'third',
-                        'help' => 'Width of the inner content area as a percentage of the container.',
-                    ],
-                ],
-            ],
-            'filler' => [
-                'id' => 'filler',
-                'label' => 'Filler',
-                'twig' => 'filler',
-                'fields' => [
-                    array_merge(self::backgroundField('filler_background'), ['width' => 'half']),
-                    [
-                        'name' => 'filler_size',
-                        'type' => 'select',
-                        'label' => 'Size',
-                        'default' => 'medium',
-                        'width' => 'half',
-                        'options' => [
-                            'small' => 'Small',
-                            'medium' => 'Medium',
-                            'large' => 'Large',
-                        ],
-                    ],
-                ],
-            ],
-            'boxes' => [
-                'id' => 'boxes',
-                'label' => 'Boxes',
-                'twig' => 'boxes',
-                'fields' => [
-                    [
-                        'name' => 'boxes_overall_classes',
-                        'type' => 'text',
-                        'label' => 'Overall classes',
-                        'help' => 'Extra CSS classes on the outer section element.',
-                    ],
-                    [
-                        'name' => 'boxes_container_classes',
-                        'type' => 'text',
-                        'label' => 'Container classes',
-                        'help' => 'Extra CSS classes on the inner container wrapper.',
-                    ],
-                    [
-                        'name' => 'boxes_valign',
-                        'type' => 'select',
-                        'label' => 'Vertical alignment',
-                        'default' => 'stretch',
-                        'options' => [
-                            'stretch' => 'Stretch',
-                            'start' => 'Top',
-                            'center' => 'Center',
-                            'end' => 'Bottom',
-                        ],
-                    ],
-                    self::backgroundField('boxes_background'),
-                    [
-                        'name' => 'boxes',
-                        'type' => 'list',
-                        'label' => 'Boxes',
-                        'fields' => [
-                            [
-                                'name' => 'body',
-                                'type' => 'markdown',
-                                'label' => 'Body',
-                                'help' => 'Markdown and inline HTML supported.',
-                            ],
-                            [
-                                'name' => 'classes',
-                                'type' => 'text',
-                                'label' => 'Classes',
-                                'help' => 'Extra CSS classes on this box.',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-            'faq' => [
-                'id' => 'faq',
-                'label' => 'FAQ',
-                'twig' => 'faq',
-                'fields' => [
-                    self::backgroundField('faq_background'),
-                    [
-                        'name' => 'faq',
-                        'type' => 'list',
-                        'label' => 'Items',
-                        'fields' => [
-                            [
-                                'name' => 'title',
-                                'type' => 'text',
-                                'label' => 'Title',
-                            ],
-                            [
-                                'name' => 'content',
-                                'type' => 'markdown',
-                                'label' => 'Content',
-                                'help' => 'Markdown and inline HTML supported.',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
     }
 }

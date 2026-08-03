@@ -62,7 +62,28 @@ class BadgerBuilderPlugin extends Plugin
 
     public function onTwigTemplatePaths(): void
     {
-        $this->grav['twig']->twig_paths[] = __DIR__ . '/templates';
+        $paths = &$this->grav['twig']->twig_paths;
+
+        // Theme Local templates: {theme}/badger-builder/templates/sections/*.html.twig
+        // (sibling of local_panels.theme_path, default badger-builder/panels)
+        $local = (array) ($this->config->get('plugins.badger-builder.local_panels') ?? []);
+        $themePath = trim((string) ($local['theme_path'] ?? 'badger-builder/panels'), '/');
+        $bbRoot = dirname($themePath);
+        if ($bbRoot === '.' || $bbRoot === '') {
+            $bbRoot = 'badger-builder';
+        }
+
+        $theme = (string) ($this->config->get('system.pages.theme') ?? '');
+        if ($theme !== '') {
+            $userDir = defined('USER_DIR') ? rtrim(USER_DIR, '/') : dirname(__DIR__, 2);
+            $themeTemplates = $userDir . '/themes/' . $theme . '/' . $bbRoot . '/templates';
+            if (is_dir($themeTemplates)) {
+                array_unshift($paths, $themeTemplates);
+            }
+        }
+
+        // Plugin page template (badger-builder.html.twig)
+        $paths[] = __DIR__ . '/templates';
     }
 
     public function onTwigExtensions(): void
