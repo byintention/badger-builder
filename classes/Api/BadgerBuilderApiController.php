@@ -65,7 +65,30 @@ class BadgerBuilderApiController extends AbstractApiController
             'default_panel' => $defaultPanel,
             'show_panel_labels' => (bool) $showPanelLabels,
             'built_in_css' => (bool) ($plugin['built_in_css'] ?? true),
+            'editor_css' => $this->resolveThemeEditorCssUrl(),
         ]);
+    }
+
+    /**
+     * Public URL for active theme css/editor.css when the file exists.
+     */
+    private function resolveThemeEditorCssUrl(): ?string
+    {
+        $theme = (string) ($this->config->get('system.pages.theme') ?? '');
+        if ($theme === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $theme)) {
+            return null;
+        }
+
+        $userDir = defined('USER_DIR') ? rtrim(USER_DIR, '/') : dirname(__DIR__, 4);
+        $relative = 'user/themes/' . $theme . '/css/editor.css';
+        $path = $userDir . '/themes/' . $theme . '/css/editor.css';
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $base = rtrim((string) ($this->grav['base_url_relative'] ?? ''), '/');
+
+        return ($base === '' ? '' : $base) . '/' . $relative;
     }
 
     /**

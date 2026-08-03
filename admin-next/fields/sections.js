@@ -14,6 +14,135 @@ const MODERN_EDITOR_TYPE = 'moderneditor';
 /** @type {Promise<string|null>|null} */
 let modernEditorLoadPromise = null;
 
+/** WordPress-parity TinyMCE style formats (selector/inline + classes). */
+const BADGER_STYLE_FORMATS = [
+    { title: 'Positive', selector: 'p', classes: 'positive' },
+    { title: 'Error', selector: 'p', classes: 'negative' },
+    { title: 'Warning', selector: 'p', classes: 'warning' },
+    { title: 'Smaller text', selector: 'p', classes: 'smallText' },
+    { title: 'Larger text', selector: 'p', classes: 'largeText' },
+    { title: 'Super large text', selector: 'p', classes: 'superLargeText' },
+    { title: 'Button', selector: 'a', classes: 'btn' },
+    { title: 'Chip', inline: 'span', classes: 'chip' },
+];
+
+/**
+ * Resolve theme editor.css URL for TinyMCE content_css.
+ * @param {string|null|undefined} editorCss
+ * @returns {string|null}
+ */
+function resolveEditorCssUrl(editorCss) {
+    if (!editorCss || typeof editorCss !== 'string') {
+        return null;
+    }
+    if (/^https?:\/\//i.test(editorCss) || editorCss.startsWith('//')) {
+        return editorCss;
+    }
+    const base = (window.__GRAV_API_SERVER_URL || '').replace(/\/$/, '');
+    if (editorCss.startsWith('/')) {
+        return `${base}${editorCss}`;
+    }
+    return `${base}/${editorCss}`;
+}
+
+/**
+ * Merge Badger style_formats / block_formats / editor.css into TinyMCE init opts.
+ * @param {Record<string, unknown>} opts
+ * @param {string|null} editorCssUrl
+ * @returns {Record<string, unknown>}
+ */
+function mergeTinyMceStyleOpts(opts, editorCssUrl) {
+    const next = { ...(opts || {}) };
+    next.style_formats = BADGER_STYLE_FORMATS;
+    next.style_formats_merge = false;
+    next.block_formats = 'Paragraph=p; Heading 3=h3; Heading 4=h4';
+
+    if (editorCssUrl) {
+        const existing = next.content_css;
+        if (Array.isArray(existing)) {
+            next.content_css = existing.includes(editorCssUrl)
+                ? existing
+                : [...existing, editorCssUrl];
+        } else if (existing) {
+            next.content_css = existing === editorCssUrl
+                ? existing
+                : [existing, editorCssUrl];
+        } else {
+            next.content_css = editorCssUrl;
+        }
+    }
+
+    const spanClass = 'span[class|id|style|title|data-*]';
+    const pClass = 'p[class|id|style|dir|lang]';
+    const extended = typeof next.extended_valid_elements === 'string'
+        ? next.extended_valid_elements
+        : '';
+    const extras = [];
+    if (!extended.includes('span[')) {
+        extras.push(spanClass);
+    }
+    if (!extended.includes('p[')) {
+        extras.push(pClass);
+    }
+    if (extras.length) {
+        next.extended_valid_elements = extended
+            ? `${extended},${extras.join(',')}`
+            : extras.join(',');
+    }
+
+    return next;
+}
+
+/**
+ * Patch window.tinymce.init once (re-applies if TinyMCE is replaced).
+ * @param {string|null|undefined} editorCss
+ */
+function installTinyMceStyleFormats(editorCss) {
+    const editorCssUrl = resolveEditorCssUrl(editorCss);
+    window.__BADGER_TINYMCE_EDITOR_CSS__ = editorCssUrl;
+
+    const patchInstance = (tinymce) => {
+        if (!tinymce || typeof tinymce.init !== 'function' || tinymce.__badgerStyleFormatsPatched) {
+            return;
+        }
+        const originalInit = tinymce.init.bind(tinymce);
+        tinymce.init = (opts) => originalInit(
+            mergeTinyMceStyleOpts(opts, window.__BADGER_TINYMCE_EDITOR_CSS__ || null),
+        );
+        tinymce.__badgerStyleFormatsPatched = true;
+    };
+
+    patchInstance(window.tinymce);
+
+    if (!window.__BADGER_TINYMCE_HOOK__) {
+        window.__BADGER_TINYMCE_HOOK__ = true;
+        let tinymceRef = window.tinymce;
+        try {
+            Object.defineProperty(window, 'tinymce', {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    return tinymceRef;
+                },
+                set(value) {
+                    tinymceRef = value;
+                    patchInstance(value);
+                },
+            });
+        } catch {
+            // defineProperty may fail if tinymce is non-configurable; fall through to poll.
+        }
+
+        // ME may delete + reload tinymce; keep patching until stable.
+        const pollId = window.setInterval(() => {
+            patchInstance(window.tinymce);
+        }, 200);
+        window.setTimeout(() => window.clearInterval(pollId), 60000);
+    } else {
+        patchInstance(window.tinymce);
+    }
+}
+
 class SectionsField extends HTMLElement {
     constructor() {
         super();
@@ -109,7 +238,9 @@ class SectionsField extends HTMLElement {
             this._panels = panelsJson.data?.panels ?? panelsJson.panels
                 ?? panelsJson.data?.layouts ?? panelsJson.layouts ?? [];
             this._config = configJson.data ?? configJson;
+            installTinyMceStyleFormats(this._config.editor_css);
             this._modernEditorTag = await this._ensureModernEditor();
+            installTinyMceStyleFormats(this._config.editor_css);
         } catch (e) {
             this._error = e.message || String(e);
             this._panels = [];
