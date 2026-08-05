@@ -49,9 +49,10 @@ Local YAML load order (last wins): plugin `panels/` → `user/data/{data_path}` 
 
 - Custom field: [`admin-next/fields/sections.js`](admin-next/fields/sections.js) (type = filename).
 - Schemas come from `GET /api/v1/badger-builder/panels`; UI config from `/badger-builder/config`.
-- Prefer extending existing field types (`text`, `markdown`, `select`, `range`, `list`, `page_media`) over one-off UI.
+- Prefer extending existing field types (`text`, `markdown`, `select`, `range`, `list`, `site_media`) over one-off UI.
 - Drag reorder: only the `⋮⋮` handle is `draggable` (not the whole card).
 - Long text (`markdown` / `textarea`) mounts **Modern Editor** (`grav-modern-editor--moderneditor`) when that plugin is enabled; values are stored as **HTML** (`markdown_enabled: false`) so tags like `<sup>` and `<a class="btn btn-arrow">` round-trip cleanly. If Modern Editor is missing, Badger falls back to plain textareas.
+- **`site_media`** (alias `page_media`): opens the shared TinyMCE-skinned site media picker (`admin-next/fields/bb-media-picker.js`, loaded via the plugin fields bundle). Stores a portable relative path under `user/media` plus companion `{name}_alt`. No page-media uploads on Badger Builder pages (`header.media_order` unset). TinyMCE image insert uses the same picker via `file_picker_callback` and stores root-relative `/user/media/...` `src` values; front-end Twig/`bb_markdown` absoluteizes for the live domain.
 
 ### Theme integration (do not edit themes here)
 

@@ -46,7 +46,30 @@ function resolveEditorCssUrl(editorCss) {
 }
 
 /**
- * Merge Badger style_formats / block_formats / editor.css into TinyMCE init opts.
+ * Use TinyMCE's folder icon for the image dialog browse control (default is "browse").
+ * @param {typeof window.tinymce} tinymce
+ */
+function overrideBrowseIconWithFolder(tinymce) {
+    if (!tinymce?.IconManager || tinymce.__badgerBrowseIconFolder) {
+        return;
+    }
+    const pack = tinymce.IconManager.get('default') || { icons: {} };
+    const icons = pack.icons || {};
+    const folder = icons.folder;
+    if (!folder) {
+        return;
+    }
+    tinymce.IconManager.add('default', {
+        icons: {
+            ...icons,
+            browse: folder,
+        },
+    });
+    tinymce.__badgerBrowseIconFolder = true;
+}
+
+/**
+ * Merge Badger style_formats / block_formats / editor.css / file picker into TinyMCE init opts.
  * @param {Record<string, unknown>} opts
  * @param {string|null} editorCssUrl
  * @returns {Record<string, unknown>}
@@ -55,7 +78,25 @@ function mergeTinyMceStyleOpts(opts, editorCssUrl) {
     const next = { ...(opts || {}) };
     next.style_formats = BADGER_STYLE_FORMATS;
     next.style_formats_merge = false;
-    next.block_formats = 'Paragraph=p; Heading 3=h3; Heading 4=h4';
+    next.block_formats = 'Paragraph=p; Heading 1=h1; Heading 2=h2; Heading 3=h3; Heading 4=h4; Heading 5=h5; Heading 6=h6';
+    next.file_picker_types = 'image';
+    next.file_picker_callback = (callback, _value, meta) => {
+        if (meta?.filetype && meta.filetype !== 'image') {
+            return;
+        }
+        ensureBadgerMediaPicker().then((picker) => {
+            const editor = window.tinymce?.activeEditor;
+            return picker.open({
+                editor,
+                title: 'Insert image',
+                onInsert({ url, alt }) {
+                    callback(url, { alt: alt || '' });
+                },
+            });
+        }).catch((err) => {
+            console.warn('[badger-builder] Media picker failed', err);
+        });
+    };
 
     if (editorCssUrl) {
         const existing = next.content_css;
@@ -93,6 +134,49 @@ function mergeTinyMceStyleOpts(opts, editorCssUrl) {
     return next;
 }
 
+/** @type {Promise<typeof window.BadgerMediaPicker>|null} */
+let mediaPickerLoadPromise = null;
+
+function ensureBadgerMediaPicker() {
+    if (window.BadgerMediaPicker) {
+        return Promise.resolve(window.BadgerMediaPicker);
+    }
+    if (!mediaPickerLoadPromise) {
+        mediaPickerLoadPromise = (async () => {
+            const base = (window.__GRAV_API_SERVER_URL || '') + (window.__GRAV_API_PREFIX || '/api/v1');
+            const h = { Accept: 'application/json' };
+            const token = window.__GRAV_API_TOKEN;
+            if (token) h['X-API-Token'] = token;
+            const resp = await fetch(`${base}/gpm/plugins/badger-builder/fields`, { headers: h });
+            if (!resp.ok) {
+                throw new Error(`Badger fields HTTP ${resp.status}`);
+            }
+            const scripts = await resp.json();
+            const code = scripts?.['bb-media-picker']
+                ?? scripts?.data?.['bb-media-picker']
+                ?? scripts?.fields?.['bb-media-picker'];
+            if (typeof code !== 'string') {
+                throw new Error('bb-media-picker field script missing');
+            }
+            const blob = new Blob([code], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            try {
+                await import(url);
+            } finally {
+                URL.revokeObjectURL(url);
+            }
+            if (!window.BadgerMediaPicker) {
+                throw new Error('BadgerMediaPicker failed to register');
+            }
+            return window.BadgerMediaPicker;
+        })().catch((err) => {
+            mediaPickerLoadPromise = null;
+            throw err;
+        });
+    }
+    return mediaPickerLoadPromise;
+}
+
 /**
  * Patch window.tinymce.init once (re-applies if TinyMCE is replaced).
  * @param {string|null|undefined} editorCss
@@ -102,13 +186,20 @@ function installTinyMceStyleFormats(editorCss) {
     window.__BADGER_TINYMCE_EDITOR_CSS__ = editorCssUrl;
 
     const patchInstance = (tinymce) => {
-        if (!tinymce || typeof tinymce.init !== 'function' || tinymce.__badgerStyleFormatsPatched) {
+        if (!tinymce || typeof tinymce.init !== 'function') {
+            return;
+        }
+        overrideBrowseIconWithFolder(tinymce);
+        if (tinymce.__badgerStyleFormatsPatched) {
             return;
         }
         const originalInit = tinymce.init.bind(tinymce);
-        tinymce.init = (opts) => originalInit(
-            mergeTinyMceStyleOpts(opts, window.__BADGER_TINYMCE_EDITOR_CSS__ || null),
-        );
+        tinymce.init = (opts) => {
+            overrideBrowseIconWithFolder(tinymce);
+            return originalInit(
+                mergeTinyMceStyleOpts(opts, window.__BADGER_TINYMCE_EDITOR_CSS__ || null),
+            );
+        };
         tinymce.__badgerStyleFormatsPatched = true;
     };
 
@@ -155,12 +246,6 @@ class SectionsField extends HTMLElement {
         this._expanded = new Set();
         this._dragIndex = null;
         this._listDrag = null;
-        this._mediaPickerOpen = null;
-        this._pageMedia = [];
-        this._mediaLoading = false;
-        this._mediaError = null;
-        this._pageMediaWarmed = false;
-        this._mediaWarming = false;
         /** @type {string|null} */
         this._modernEditorTag = null;
     }
@@ -241,13 +326,13 @@ class SectionsField extends HTMLElement {
             installTinyMceStyleFormats(this._config.editor_css);
             this._modernEditorTag = await this._ensureModernEditor();
             installTinyMceStyleFormats(this._config.editor_css);
+            ensureBadgerMediaPicker().catch(() => {});
         } catch (e) {
             this._error = e.message || String(e);
             this._panels = [];
         } finally {
             this._loading = false;
             this._render();
-            this._warmPageMedia();
         }
     }
 
@@ -384,13 +469,14 @@ class SectionsField extends HTMLElement {
         `;
     }
 
-    _mountModernEditors() {
+    _mountModernEditors(root = this) {
         if (!this._useModernEditor()) {
             return;
         }
         const tag = this._modernEditorTag;
+        const scope = root || this;
 
-        this.querySelectorAll('[data-bb-me="1"]').forEach((host) => {
+        scope.querySelectorAll('[data-bb-me="1"]').forEach((host) => {
             if (host.querySelector(tag)) {
                 return;
             }
@@ -582,72 +668,48 @@ class SectionsField extends HTMLElement {
         return route.replace(/^\//, '');
     }
 
-    _mediaItem(filename) {
-        if (!filename) return null;
-        const base = String(filename).split('/').pop();
-        return this._pageMedia.find((m) => m.filename === filename || m.filename === base) || null;
+    _siteMediaPreviewUrl(path) {
+        if (!path) return '';
+        const base = (window.__GRAV_API_SERVER_URL || '').replace(/\/$/, '');
+        const rel = String(path).replace(/^\/+/, '');
+        return `${base}/user/media/${rel}`;
     }
 
-    async _loadPageMedia({ silent = false } = {}) {
-        const route = this._pageMediaApiRoute();
-        if (!route) {
-            this._mediaError = 'Save the page first, then pick from Page Media on the Content tab.';
-            this._pageMedia = [];
-            return;
-        }
-        if (!silent) this._mediaLoading = true;
-        this._mediaError = null;
+    _altFieldName(name) {
+        return `${name}_alt`;
+    }
+
+    async _openSiteMediaPicker(index, name) {
         try {
-            const resp = await fetch(this._apiPath(`/pages/${encodeURI(route)}/media`), {
-                headers: this._headers(),
+            await this._ensureModernEditor();
+            const picker = await ensureBadgerMediaPicker();
+            const section = this._value[index] || {};
+            const selectedPath = section[name] || null;
+            const alt = section[this._altFieldName(name)] || '';
+            await picker.open({
+                editor: window.tinymce?.activeEditor || window.tinymce?.editors?.[0],
+                title: 'Choose image',
+                selectedPath,
+                alt,
+                onInsert: ({ path, alt: nextAlt }) => {
+                    this._setSectionField(index, name, path, { emit: false });
+                    this._setSectionField(index, this._altFieldName(name), nextAlt || '', { emit: false });
+                    this._render();
+                    this._emit();
+                    this._emitCommit();
+                },
             });
-            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-            const json = await resp.json();
-            const items = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
-            this._pageMedia = items.filter((m) => String(m.type || '').startsWith('image/'));
-            this._pageMediaWarmed = true;
-        } catch (e) {
-            this._mediaError = e.message || String(e);
-            this._pageMedia = [];
-        } finally {
-            if (!silent) this._mediaLoading = false;
+        } catch (err) {
+            console.warn('[badger-builder] Site media picker failed', err);
         }
-    }
-
-    /** Prefetch page media so selected images show a thumbnail without opening the picker. */
-    async _warmPageMedia() {
-        if (this._mediaWarming || this._pageMediaWarmed) return;
-        this._mediaWarming = true;
-        try {
-            await this._loadPageMedia({ silent: true });
-            if (this.isConnected && !this._loading) this._render();
-        } finally {
-            this._mediaWarming = false;
-        }
-    }
-
-    async _toggleMediaPicker(key) {
-        if (this._mediaPickerOpen === key) {
-            this._mediaPickerOpen = null;
-            this._render();
-            return;
-        }
-        this._mediaPickerOpen = key;
-        this._render();
-        await this._loadPageMedia();
-        this._render();
-    }
-
-    _selectMedia(index, name, filename) {
-        this._setSectionField(index, name, filename);
-        this._mediaPickerOpen = null;
-        this._render();
     }
 
     _clearMedia(index, name) {
-        this._setSectionField(index, name, '');
-        this._mediaPickerOpen = null;
+        this._setSectionField(index, name, '', { emit: false });
+        this._setSectionField(index, this._altFieldName(name), '', { emit: false });
         this._render();
+        this._emit();
+        this._emitCommit();
     }
 
     _syncFieldsFromDom() {
@@ -825,18 +887,50 @@ class SectionsField extends HTMLElement {
     }
 
     _toggleExpanded(index) {
-        if (this._expanded.has(index)) {
-            this._expanded.delete(index);
-        } else {
-            this._expanded.add(index);
+        const card = this.querySelector(`.bb-admin-card[data-index="${index}"]`);
+        if (!card) {
+            if (this._expanded.has(index)) {
+                this._expanded.delete(index);
+            } else {
+                this._expanded.add(index);
+            }
+            this._render();
+            return;
         }
-        this._render();
+
+        const opening = !this._expanded.has(index);
+        // Persist editor/input values before tearing down this card's body.
+        this._syncFieldsFromDom();
+
+        if (!opening) {
+            this._expanded.delete(index);
+            card.classList.remove('is-open');
+            card.querySelector('.bb-admin-card-body')?.remove();
+            return;
+        }
+
+        this._expanded.add(index);
+        card.classList.add('is-open');
+        if (card.querySelector('.bb-admin-card-body')) {
+            return;
+        }
+
+        const section = this._value[index];
+        if (!section) return;
+
+        const body = document.createElement('div');
+        body.className = 'bb-admin-card-body';
+        body.innerHTML = this._sectionFieldsHtml(index, section);
+        card.appendChild(body);
+        this._bindBodyEvents(body);
+        this._mountModernEditors(body);
     }
 
     // ─── Field editors ───────────────────────────────────────────────────────
-    _renderPageMediaField(index, section, field, opts = {}) {
+    _renderSiteMediaField(index, section, field, opts = {}) {
         const name = field.name;
         const val = section[name] || '';
+        const alt = section[this._altFieldName(name)] || '';
         const label = field.label || name;
         const help = field.help ? `<span class="bb-admin-help">${this._escape(field.help)}</span>` : '';
         const width = opts.width ?? field.width;
@@ -847,51 +941,28 @@ class SectionsField extends HTMLElement {
                 : width === 'third'
                     ? 'bb-admin-field bb-admin-field-third bb-admin-field-media'
                     : 'bb-admin-field bb-admin-field-media';
-        const pickerKey = `${index}:${name}`;
-        const open = this._mediaPickerOpen === pickerKey;
-        const item = this._mediaItem(val);
-        const thumb = item?.thumbnail_url || item?.url || '';
+        const thumb = val ? this._siteMediaPreviewUrl(val) : '';
         const preview = val
             ? (thumb
-                ? `<img class="bb-admin-media-preview-img" src="${this._escape(thumb)}" alt="${this._escape(val)}" />`
+                ? `<img class="bb-admin-media-preview-img" src="${this._escape(thumb)}" alt="${this._escape(alt || val)}" />`
                 : `<span class="bb-admin-media-preview-file">${this._escape(val)}</span>`)
             : `<span class="bb-admin-media-preview-empty">No image selected</span>`;
-
-        let pickerBody = '';
-        if (open) {
-            if (this._mediaLoading) {
-                pickerBody = '<div class="bb-admin-media-status">Loading page media…</div>';
-            } else if (this._mediaError) {
-                pickerBody = `<div class="bb-admin-media-status bb-admin-media-status-error">${this._escape(this._mediaError)}</div>`;
-            } else if (!this._pageMedia.length) {
-                pickerBody = '<div class="bb-admin-media-status">No images on this page yet. Upload on the Content tab → Page Media.</div>';
-            } else {
-                pickerBody = `<div class="bb-admin-media-grid">${this._pageMedia.map((m) => {
-                    const src = m.thumbnail_url || m.url || '';
-                    const selected = m.filename === val || m.filename === String(val).split('/').pop() ? ' is-selected' : '';
-                    return `
-                        <button type="button" class="bb-admin-media-item${selected}" data-action="media-pick"
-                            data-index="${index}" data-name="${this._escape(name)}"
-                            data-filename="${this._escape(m.filename)}" title="${this._escape(m.filename)}">
-                            ${src ? `<img src="${this._escape(src)}" alt="" loading="lazy" />` : `<span>${this._escape(m.filename)}</span>`}
-                        </button>
-                    `;
-                }).join('')}</div>`;
-            }
-        }
+        const altLine = val
+            ? `<div class="bb-admin-help">Alt: ${alt ? this._escape(alt) : '<em>none</em>'}</div>`
+            : '';
 
         return `
             <div class="${rowClass}">
                 <label class="bb-admin-label">${this._escape(label)}</label>
                 ${help}
                 <div class="bb-admin-media-preview">${preview}</div>
+                ${altLine}
                 <div class="bb-admin-media-actions">
-                    <button type="button" class="bb-admin-btn" data-action="media-toggle"
-                        data-key="${this._escape(pickerKey)}">${open ? 'Close picker' : 'Choose from page media'}</button>
+                    <button type="button" class="bb-admin-btn" data-action="media-open"
+                        data-index="${index}" data-name="${this._escape(name)}">Choose from site media</button>
                     ${val ? `<button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="media-clear"
                         data-index="${index}" data-name="${this._escape(name)}">Clear</button>` : ''}
                 </div>
-                ${open ? `<div class="bb-admin-media-picker">${pickerBody}</div>` : ''}
             </div>
         `;
     }
@@ -944,8 +1015,8 @@ class SectionsField extends HTMLElement {
                     ? 'bb-admin-field bb-admin-field-third'
                     : 'bb-admin-field';
 
-        if (field.type === 'page_media') {
-            return this._renderPageMediaField(index, section, field, opts);
+        if (field.type === 'site_media' || field.type === 'page_media') {
+            return this._renderSiteMediaField(index, section, field, opts);
         }
 
         if (field.type === 'select') {
@@ -990,8 +1061,8 @@ class SectionsField extends HTMLElement {
                     const bodyField = subFields.find((sf) => sf.name === 'body');
                     const classesField = subFields.find((sf) => sf.name === 'classes');
                     subHtml = `<div class="bb-admin-list-split">
-                        ${bodyField ? this._renderListSubField(index, name, li, item, bodyField, 'bb-admin-list-col-half') : ''}
-                        ${classesField ? this._renderListSubField(index, name, li, item, classesField, 'bb-admin-list-col-half') : ''}
+                        ${bodyField ? this._renderListSubField(index, name, li, item, bodyField, 'bb-admin-list-col-wide') : ''}
+                        ${classesField ? this._renderListSubField(index, name, li, item, classesField, 'bb-admin-list-col-narrow') : ''}
                     </div>`;
                 } else if (name === 'faq') {
                     const titleField = subFields.find((sf) => sf.name === 'title');
@@ -1024,9 +1095,9 @@ class SectionsField extends HTMLElement {
                 `;
             }).join('');
 
-            if (name === 'faq') {
+            if (name === 'faq' || name === 'boxes') {
                 return `
-                    <div class="bb-admin-field bb-admin-field-list bb-admin-field-list-faq">
+                    <div class="bb-admin-field bb-admin-field-list bb-admin-field-list-${this._escape(name)}">
                         <div class="bb-admin-list-head">
                             <label class="bb-admin-label">${this._escape(label)}</label>
                         </div>
@@ -1077,62 +1148,69 @@ class SectionsField extends HTMLElement {
         `;
     }
 
-    _renderSection(index, section) {
+    _sectionFieldsHtml(index, section) {
         const panelId = this._panelId(section);
         const panel = this._panelById(panelId);
-        const expanded = this._expanded.has(index);
-        const showLabel = this._showPanelLabels();
-        const title = showLabel ? this._panelLabel(panelId) : `Section ${index + 1}`;
-        const summary = this._sectionSummary(section);
-        const summaryText = summary ? String(summary).slice(0, 60) : '';
 
-        let fieldsHtml;
         if (panelId === 'boxes' && panel) {
             const fields = panel.fields || [];
             const configFields = fields.filter((f) => f.type !== 'list');
             const listFields = fields.filter((f) => f.type === 'list');
-            fieldsHtml = `
+            return `
                 <div class="bb-admin-field bb-admin-field-quarters">
                     ${configFields.map((f) => this._renderField(index, section, f, { width: 'quarter' })).join('')}
                 </div>
                 ${listFields.map((f) => this._renderField(index, section, f)).join('')}
             `;
-        } else if (panelId === 'hero' && panel) {
+        }
+        if (panelId === 'hero' && panel) {
             const fields = panel.fields || [];
             const mainFields = fields.filter((f) => f.width !== 'quarter');
             const quarterFields = fields.filter((f) => f.width === 'quarter');
-            fieldsHtml = `
+            return `
                 ${mainFields.map((f) => this._renderField(index, section, f)).join('')}
                 ${quarterFields.length ? `<div class="bb-admin-field bb-admin-field-quarters">
                     ${quarterFields.map((f) => this._renderField(index, section, f, { width: 'quarter' })).join('')}
                 </div>` : ''}
             `;
-        } else if (panelId === 'filler' && panel) {
+        }
+        if (panelId === 'filler' && panel) {
             const fields = panel.fields || [];
-            fieldsHtml = `<div class="bb-admin-field bb-admin-field-halves">
+            return `<div class="bb-admin-field bb-admin-field-halves">
                 ${fields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
             </div>`;
-        } else if (panelId === 'text' && panel) {
+        }
+        if (panelId === 'text' && panel) {
             const fields = panel.fields || [];
             // Row 1: body + image; row 2: background + align (all half-width, wraps).
-            fieldsHtml = `<div class="bb-admin-field bb-admin-field-halves bb-admin-field-halves-text">
+            return `<div class="bb-admin-field bb-admin-field-halves bb-admin-field-halves-text">
                 ${fields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
             </div>`;
-        } else if (panelId === 'full' && panel) {
+        }
+        if (panelId === 'full' && panel) {
             const fields = panel.fields || [];
             const mainFields = fields.filter((f) => f.width !== 'third');
             const thirdFields = fields.filter((f) => f.width === 'third');
-            fieldsHtml = `
+            return `
                 ${mainFields.map((f) => this._renderField(index, section, f)).join('')}
                 ${thirdFields.length ? `<div class="bb-admin-field bb-admin-field-thirds">
                     ${thirdFields.map((f) => this._renderField(index, section, f, { width: 'third' })).join('')}
                 </div>` : ''}
             `;
-        } else {
-            fieldsHtml = panel
-                ? (panel.fields || []).map((f) => this._renderField(index, section, f)).join('')
-                : '<p class="bb-admin-error">Unknown panel.</p>';
         }
+        return panel
+            ? (panel.fields || []).map((f) => this._renderField(index, section, f)).join('')
+            : '<p class="bb-admin-error">Unknown panel.</p>';
+    }
+
+    _renderSection(index, section) {
+        const panelId = this._panelId(section);
+        const expanded = this._expanded.has(index);
+        const showLabel = this._showPanelLabels();
+        const title = showLabel ? this._panelLabel(panelId) : `Section ${index + 1}`;
+        const summary = this._sectionSummary(section);
+        const summaryText = summary ? String(summary).slice(0, 60) : '';
+        const fieldsHtml = expanded ? this._sectionFieldsHtml(index, section) : '';
 
         return `
             <article class="bb-admin-card${expanded ? ' is-open' : ''}" data-index="${index}">
@@ -1231,94 +1309,6 @@ class SectionsField extends HTMLElement {
             btn.addEventListener('click', () => this._removeSection(parseInt(btn.dataset.index, 10)));
         });
 
-        this.querySelectorAll('[data-action="field"]').forEach((el) => {
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', (ev) => {
-                    // Native change bubbles to the custom-element host; Admin2 treats
-                    // that as onchange(undefined) and clears dirty state.
-                    ev.stopPropagation();
-                    const index = parseInt(el.dataset.index, 10);
-                    const name = el.dataset.name;
-                    this._setSectionField(index, name, el.value, { emit: false });
-                    this._emitCommit();
-                });
-                return;
-            }
-            el.addEventListener('input', () => {
-                const index = parseInt(el.dataset.index, 10);
-                const name = el.dataset.name;
-                if (el.type === 'range') {
-                    const unit = el.dataset.unit || '%';
-                    const output = el.parentElement?.querySelector('.bb-admin-range-value');
-                    if (output) output.textContent = `${el.value}${unit}`;
-                }
-                this._setSectionField(index, name, el.value);
-            });
-            el.addEventListener('blur', () => this._emitCommit());
-        });
-
-        this.querySelectorAll('[data-action="list-add"]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const index = parseInt(btn.dataset.index, 10);
-                const name = btn.dataset.name;
-                const panel = this._panelById(this._panelId(this._value[index]));
-                const listField = (panel?.fields || []).find((f) => f.name === name);
-                const empty = {};
-                for (const sf of listField?.fields || []) {
-                    empty[sf.name] = '';
-                }
-                const section = { ...this._value[index] };
-                const list = Array.isArray(section[name]) ? [...section[name]] : [];
-                list.push(empty);
-                section[name] = list;
-                this._updateSection(index, section);
-            });
-        });
-
-        this.querySelectorAll('[data-action="list-remove"]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const index = parseInt(btn.dataset.index, 10);
-                const name = btn.dataset.name;
-                const li = parseInt(btn.dataset.li, 10);
-                const section = { ...this._value[index] };
-                const list = Array.isArray(section[name]) ? [...section[name]] : [];
-                list.splice(li, 1);
-                section[name] = list;
-                this._updateSection(index, section);
-            });
-        });
-
-        this.querySelectorAll('[data-action="list-field"]').forEach((el) => {
-            el.addEventListener('input', () => {
-                const index = parseInt(el.dataset.index, 10);
-                const name = el.dataset.name;
-                const li = parseInt(el.dataset.li, 10);
-                const sub = el.dataset.sub;
-                this._setListField(index, name, li, sub, el.value);
-            });
-            el.addEventListener('blur', () => this._emitCommit());
-        });
-
-        this.querySelectorAll('[data-action="media-toggle"]').forEach((btn) => {
-            btn.addEventListener('click', () => this._toggleMediaPicker(btn.dataset.key));
-        });
-
-        this.querySelectorAll('[data-action="media-pick"]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                this._selectMedia(
-                    parseInt(btn.dataset.index, 10),
-                    btn.dataset.name,
-                    btn.dataset.filename
-                );
-            });
-        });
-
-        this.querySelectorAll('[data-action="media-clear"]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                this._clearMedia(parseInt(btn.dataset.index, 10), btn.dataset.name);
-            });
-        });
-
         this.querySelectorAll('.bb-admin-drag').forEach((handle) => {
             handle.addEventListener('dragstart', (e) => {
                 const card = handle.closest('.bb-admin-card');
@@ -1351,7 +1341,97 @@ class SectionsField extends HTMLElement {
             });
         });
 
-        this.querySelectorAll('.bb-admin-list-drag').forEach((handle) => {
+        this._bindBodyEvents(this);
+    }
+
+    /** Field / list / media handlers for a card body (or the whole host on full render). */
+    _bindBodyEvents(root) {
+        const scope = root || this;
+
+        scope.querySelectorAll('[data-action="field"]').forEach((el) => {
+            if (el.tagName === 'SELECT') {
+                el.addEventListener('change', (ev) => {
+                    // Native change bubbles to the custom-element host; Admin2 treats
+                    // that as onchange(undefined) and clears dirty state.
+                    ev.stopPropagation();
+                    const index = parseInt(el.dataset.index, 10);
+                    const name = el.dataset.name;
+                    this._setSectionField(index, name, el.value, { emit: false });
+                    this._emitCommit();
+                });
+                return;
+            }
+            el.addEventListener('input', () => {
+                const index = parseInt(el.dataset.index, 10);
+                const name = el.dataset.name;
+                if (el.type === 'range') {
+                    const unit = el.dataset.unit || '%';
+                    const output = el.parentElement?.querySelector('.bb-admin-range-value');
+                    if (output) output.textContent = `${el.value}${unit}`;
+                }
+                this._setSectionField(index, name, el.value);
+            });
+            el.addEventListener('blur', () => this._emitCommit());
+        });
+
+        scope.querySelectorAll('[data-action="list-add"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index, 10);
+                const name = btn.dataset.name;
+                const panel = this._panelById(this._panelId(this._value[index]));
+                const listField = (panel?.fields || []).find((f) => f.name === name);
+                const empty = {};
+                for (const sf of listField?.fields || []) {
+                    empty[sf.name] = '';
+                }
+                const section = { ...this._value[index] };
+                const list = Array.isArray(section[name]) ? [...section[name]] : [];
+                list.push(empty);
+                section[name] = list;
+                this._updateSection(index, section);
+            });
+        });
+
+        scope.querySelectorAll('[data-action="list-remove"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const index = parseInt(btn.dataset.index, 10);
+                const name = btn.dataset.name;
+                const li = parseInt(btn.dataset.li, 10);
+                const section = { ...this._value[index] };
+                const list = Array.isArray(section[name]) ? [...section[name]] : [];
+                list.splice(li, 1);
+                section[name] = list;
+                this._updateSection(index, section);
+            });
+        });
+
+        scope.querySelectorAll('[data-action="list-field"]').forEach((el) => {
+            el.addEventListener('input', () => {
+                const index = parseInt(el.dataset.index, 10);
+                const name = el.dataset.name;
+                const li = parseInt(el.dataset.li, 10);
+                const sub = el.dataset.sub;
+                this._setListField(index, name, li, sub, el.value);
+            });
+            el.addEventListener('blur', () => this._emitCommit());
+        });
+
+        scope.querySelectorAll('[data-action="media-open"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this._openSiteMediaPicker(
+                    parseInt(btn.dataset.index, 10),
+                    btn.dataset.name,
+                );
+            });
+        });
+
+        scope.querySelectorAll('[data-action="media-clear"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this._clearMedia(parseInt(btn.dataset.index, 10), btn.dataset.name);
+            });
+        });
+
+        scope.querySelectorAll('.bb-admin-list-drag').forEach((handle) => {
             handle.addEventListener('dragstart', (e) => {
                 const item = handle.closest('.bb-admin-list-item');
                 if (!item) return;
@@ -1372,7 +1452,7 @@ class SectionsField extends HTMLElement {
             });
         });
 
-        this.querySelectorAll('.bb-admin-list-item').forEach((item) => {
+        scope.querySelectorAll('.bb-admin-list-item').forEach((item) => {
             item.addEventListener('dragover', (e) => {
                 if (!this._listDrag) return;
                 if (this._listDrag.listName !== item.dataset.listName

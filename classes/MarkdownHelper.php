@@ -9,6 +9,7 @@ use Grav\Common\Markdown\Parsedown;
 use Grav\Common\Markdown\ParsedownExtra;
 use Grav\Common\Page\Interfaces\PageInterface;
 use Grav\Common\Page\Markdown\Excerpts;
+use Grav\Common\Utils;
 
 /**
  * Panel body processing — HTML from Modern Editor, or Markdown for legacy content.
@@ -24,7 +25,7 @@ class MarkdownHelper
     public static function process(string $string, bool $block = true, ?PageInterface $page = null): string
     {
         if (self::looksLikeHtml($string)) {
-            return $string;
+            return self::absoluteizeMediaUrls($string);
         }
 
         $grav = Grav::instance();
@@ -44,11 +45,38 @@ class MarkdownHelper
 
         $parsedown = $extra ? new ParsedownExtra($excerpts) : new Parsedown($excerpts);
 
-        if ($block) {
-            return $parsedown->text($string);
+        $html = $block ? $parsedown->text($string) : $parsedown->line($string);
+
+        return self::absoluteizeMediaUrls($html);
+    }
+
+    /**
+     * Rewrite root-relative site/page media URLs to absolute for front-end output.
+     * Stored content stays portable (no hostname).
+     */
+    public static function absoluteizeMediaUrls(string $html): string
+    {
+        if ($html === '' || !str_contains($html, 'src=')) {
+            return $html;
         }
 
-        return $parsedown->line($string);
+        return (string) preg_replace_callback(
+            '#\bsrc=(["\'])(/?(?:user/media/|user/pages/)[^"\']+)\1#i',
+            static function (array $m): string {
+                $quote = $m[1];
+                $path = $m[2];
+                if (!str_starts_with($path, '/')) {
+                    $path = '/' . $path;
+                }
+                $absolute = Utils::url($path, true, true);
+                if (!is_string($absolute) || $absolute === '') {
+                    $absolute = $path;
+                }
+
+                return 'src=' . $quote . $absolute . $quote;
+            },
+            $html
+        );
     }
 
     /**

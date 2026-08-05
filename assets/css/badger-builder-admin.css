@@ -91,7 +91,8 @@ grav-badger-builder--sections .bb-admin-card-summary {
 }
 
 grav-badger-builder--sections .bb-admin-card-actions {
-    display: flex;
+    display: flex; 
+        align-items: center;
     gap: 4px;
     flex-shrink: 0;
 }
@@ -174,13 +175,17 @@ grav-badger-builder--sections .bb-admin-list-split .bb-admin-field-nested {
 }
 
 grav-badger-builder--sections .bb-admin-list-col-wide {
-    flex: 1 1 calc(66% - 6px);
-    min-width: 12rem;
+    flex: 1 1 calc(66.666% - 8px);
+    min-width: 0;
+    max-width: calc(66.666% - 8px);
+    box-sizing: border-box;
 }
 
 grav-badger-builder--sections .bb-admin-list-col-narrow {
-    flex: 1 1 calc(34% - 6px);
-    min-width: 8rem;
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 0;
+    max-width: calc(33.333% - 8px);
+    box-sizing: border-box;
 }
 
 grav-badger-builder--sections .bb-admin-list-col-half {
@@ -198,7 +203,8 @@ grav-badger-builder--sections .bb-admin-list-col-half .bb-admin-field-modern {
     width: auto;
 }
 
-grav-badger-builder--sections .bb-admin-field-list-faq .bb-admin-list-split {
+grav-badger-builder--sections .bb-admin-field-list-faq .bb-admin-list-split,
+grav-badger-builder--sections .bb-admin-field-list-boxes .bb-admin-list-split {
     flex-wrap: nowrap;
 }
 
@@ -265,8 +271,10 @@ grav-badger-builder--sections .bb-admin-field-modern grav-modern-editor--moderne
 
 grav-badger-builder--sections .bb-admin-list-col-wide .bb-admin-field-modern,
 grav-badger-builder--sections .bb-admin-list-col-wide.bb-admin-field-modern {
-    flex: 1 1 auto;
+    flex: 1 1 calc(66.666% - 8px);
     min-width: 0;
+    max-width: calc(66.666% - 8px);
+    width: auto;
 }
 
 grav-badger-builder--sections .bb-admin-btn {
@@ -496,4 +504,34 @@ grav-badger-builder--sections .bb-admin-status-error {
 grav-badger-builder--sections .bb-admin-error {
     color: var(--destructive, #dc2626);
     font-size: 13px;
+}
+
+/* Media picker edits */
+#bb-media-picker {
+    height: auto;
+    min-height: 600px;
+    max-height: 80%;
+    overflow-y: auto;
+    .tox-label {
+        padding-bottom: 10px;
+    }
+
+    .tox-dialog__header {
+        padding: 30px 30px 0 30px;
+    }
+    .tox-dialog__footer {
+        padding: 0 30px 20px 30px;
+    }
+    .tox-dialog__body-content {
+        padding: 20px 30px;
+    }
+    .tox-form {
+        .tox-form__grid--3col {
+            align-items: flex-end;
+            padding-bottom: 20px;
+        }
+    }
+    .tox-form__group {
+        margin-bottom: 20px;
+    }
 }

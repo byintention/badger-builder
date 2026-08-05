@@ -1,4 +1,7 @@
 
+2026-08-04
+Site media picker (TinyMCE windowManager): site_media fields + TinyMCE image insert; portable paths, absolute render.
+
 2026-08-03
 Section list Remove link replaced with Admin2-style trash icon delete button.
 
