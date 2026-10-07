@@ -7,6 +7,8 @@ enabled_panels:
   - filler
   - boxes
   - faq
+  - opener
+  - closer
 default_panel: text
 show_panel_labels: true
 built_in_css: false
@@ -14,3 +16,11 @@ local_panels:
   enabled: true
   theme_path: badger-builder/panels
   data_path: badger-builder/panels
+updates:
+  enabled: true
+  base_url: https://gitea.com
+  owner: byintention
+  repo: badgerbuilder
+  token: ''
+  asset_prefix: badger-builder-
+  prerelease: false

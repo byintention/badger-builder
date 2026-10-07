@@ -14,7 +14,7 @@ Keep styles in `assets/css/` — do **not** add inline `<style>` in JS unless ex
 | File | Purpose | Loaded by |
 |------|---------|-----------|
 | `assets/css/badger-builder.css` | Front-end section styles | `badger-builder.php` on public `badger-builder` pages when `built_in_css` is enabled |
-| `assets/css/badger-builder-admin.css` | Admin2 sections field | `sections.js` `_ensureStylesheet()` when the field connects |
+| `assets/css/badger-builder-admin.css` | Admin2 sections + site_media + meta_description fields | `sections.js` / `site_media.js` / `meta_description.js` `_ensureStylesheet()` when the field connects |
 
 ### Class naming
 

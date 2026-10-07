@@ -1,0 +1,4 @@
+{% set id = 'panel-' ~ index %}
+{% set extra = section.opener_classes|default('') %}
+
+<div id="{{ id|e('html_attr') }}" class="bb-panel-opener{% if extra %} {{ extra|e('html_attr') }}{% endif %}">

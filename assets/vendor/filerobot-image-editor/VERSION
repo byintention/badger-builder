@@ -1,0 +1,3 @@
+4.8.1
+MIT — https://github.com/scaleflex/filerobot-image-editor
+Vanilla UMD (window.FilerobotImageEditor). Do not replace with npm 5.x (React-only).

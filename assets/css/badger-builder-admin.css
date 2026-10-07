@@ -1,6 +1,9 @@
-/* Badger Builder — Admin2 sections field only.
-   Loaded lazily by sections.js (_ensureStylesheet). Not used on the public site.
-   Scoped to grav-badger-builder--sections custom element. */
+/* Badger Builder — Admin2 fields.
+   Loaded lazily by sections.js / site_media.js / meta_description.js / widgets / bb-media-picker.js (_ensureStylesheet). Not used on the public site.
+   Sections UI is scoped to grav-badger-builder--sections; standalone site_media
+   field styles use grav-badger-builder--site_media; meta_description uses
+   grav-badger-builder--meta_description (status icon sits under the Admin Next help/tooltip).
+   Pages-list traffic lights use .bb-admin-meta-desc-col (injected by the autoload widget). */
 
 grav-badger-builder--sections .bb-admin-sections {
     display: flex;
@@ -20,6 +23,7 @@ grav-badger-builder--sections .bb-admin-sections-add {
     align-items: center;
     flex-wrap: wrap;
     margin-top: 4px;
+    padding-bottom: 48px;
 }
 
 grav-badger-builder--sections .bb-admin-add-select {
@@ -206,6 +210,7 @@ grav-badger-builder--sections .bb-admin-list-col-half .bb-admin-field-modern {
 grav-badger-builder--sections .bb-admin-field-list-faq .bb-admin-list-split,
 grav-badger-builder--sections .bb-admin-field-list-boxes .bb-admin-list-split {
     flex-wrap: nowrap;
+    padding: 10px;
 }
 
 grav-badger-builder--sections .bb-admin-label {
@@ -269,6 +274,25 @@ grav-badger-builder--sections .bb-admin-field-modern grav-modern-editor--moderne
 /* TinyMCE (.tox-tinymce) lives inside Modern Editor's shadow root — border
    override is injected from sections.js (_injectToxNoBorder), not here. */
 
+/* Paragraph (blocks) menu paints real h1–h6 tags; Oxide rows are 24px.
+   Target heading previews only — do not change menu overflow or label line-height. */
+.tox-tinymce-aux .tox-collection__item-label {
+    
+   div,h1,h2,h3,h4,h5,h6 {
+        background-color: transparent!important;
+    }
+    h1 {
+        line-height: 50px;
+    }
+    h2 {
+        line-height: 40px;
+    }
+    h3 {
+        line-height: 30px;
+    }
+
+}
+
 grav-badger-builder--sections .bb-admin-list-col-wide .bb-admin-field-modern,
 grav-badger-builder--sections .bb-admin-list-col-wide.bb-admin-field-modern {
     flex: 1 1 calc(66.666% - 8px);
@@ -298,6 +322,15 @@ grav-badger-builder--sections .bb-admin-btn-primary {
 grav-badger-builder--sections .bb-admin-btn-ghost {
     border-color: transparent;
     background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+grav-badger-builder--sections .bb-admin-btn-ghost svg {
+    display: block;
+    width: 14px;
+    height: 14px;
 }
 
 grav-badger-builder--sections .bb-admin-btn-danger {
@@ -346,10 +379,11 @@ grav-badger-builder--sections .bb-admin-list {
 grav-badger-builder--sections .bb-admin-list-item {
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 6px;
-    padding: 10px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
+    overflow: hidden;
 }
 
 grav-badger-builder--sections .bb-admin-list-item-head {
@@ -359,6 +393,8 @@ grav-badger-builder--sections .bb-admin-list-item-head {
     font-size: 12px;
     font-weight: 600;
     gap: 8px;
+    padding: 8px 10px;
+    background: var(--muted, #f9fafb);
 }
 
 grav-badger-builder--sections .bb-admin-list-item-head > span {
@@ -381,17 +417,6 @@ grav-badger-builder--sections .bb-admin-list-foot {
     display: flex;
     justify-content: flex-end;
     margin-top: 8px;
-}
-
-grav-badger-builder--sections .bb-admin-btn-purple {
-    background: #7c3aed;
-    border-color: #7c3aed;
-    color: #fff;
-}
-
-grav-badger-builder--sections .bb-admin-btn-purple:hover {
-    background: #6d28d9;
-    border-color: #6d28d9;
 }
 
 grav-badger-builder--sections .bb-admin-list-empty {
@@ -431,6 +456,29 @@ grav-badger-builder--sections .bb-admin-field-half .bb-admin-media-preview {
 grav-badger-builder--sections .bb-admin-field-half .bb-admin-media-preview-img {
     max-height: 14rem;
     width: 100%;
+}
+
+grav-badger-builder--sections .bb-admin-hero-images,
+grav-badger-builder--sections .bb-admin-text-image-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+grav-badger-builder--sections .bb-admin-hero-images .bb-admin-hero-image .bb-admin-media-preview {
+    min-height: 9rem;
+}
+
+grav-badger-builder--sections .bb-admin-hero-images .bb-admin-hero-image .bb-admin-media-preview-img {
+    
+    width: 100%;
+    
+}
+
+grav-badger-builder--sections .bb-admin-hero-images [data-action="media-open"] {
+    background: var(--primary, #2563eb);
+    border-color: var(--primary, #2563eb);
+    color: var(--primary-foreground, #fff);
 }
 
 grav-badger-builder--sections .bb-admin-media-preview-file,
@@ -506,32 +554,737 @@ grav-badger-builder--sections .bb-admin-error {
     font-size: 13px;
 }
 
-/* Media picker edits */
-#bb-media-picker {
-    height: auto;
-    min-height: 600px;
-    max-height: 80%;
-    overflow-y: auto;
-    .tox-label {
-        padding-bottom: 10px;
+/* Site media picker overlay (document.body; not scoped to a field tag).
+   Must sit above Modern Editor's relocated TinyMCE dialog sink
+   (.tox-tinymce-aux at z-index 2147483001) so browse/insert from the
+   Insert/Edit Image dialog is usable. */
+body.bb-media-picker-open {
+    overflow: hidden;
+}
+
+.bb-media-picker-wrap {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--foreground, #111) 45%, transparent);
+    padding: 16px;
+}
+
+.bb-media-picker {
+    position: relative;
+    width: min(1480px, 100%);
+    height: min(860px, 94vh);
+    display: flex;
+    flex-direction: column;
+    background: var(--background, #fff);
+    color: var(--foreground, #111);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.bb-media-picker-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    flex-shrink: 0;
+}
+
+.bb-media-picker-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.bb-media-picker-icon-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted-foreground, #6b7280);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.bb-media-picker-icon-btn:hover {
+    background: var(--accent, #f3f4f6);
+    color: var(--foreground, #111);
+}
+
+.bb-media-picker-body {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+    flex: 1;
+    min-height: 0;
+    border-top: 1px solid var(--border, #e5e7eb);
+    border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.bb-media-picker-tree,
+.bb-media-picker-details {
+    min-height: 0;
+    overflow: auto;
+    background: var(--muted, #f9fafb);
+}
+
+.bb-media-picker-tree {
+    border-right: 1px solid var(--border, #e5e7eb);
+    padding: 8px;
+}
+
+.bb-media-picker-details {
+    border-left: 1px solid var(--border, #e5e7eb);
+    padding: 14px;
+}
+
+.bb-media-picker-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--background, #fff);
+}
+
+.bb-media-picker-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    flex-shrink: 0;
+}
+
+.bb-media-picker-crumbbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.bb-media-picker-crumb {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--primary, #2563eb);
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+}
+
+.bb-media-picker-crumb-sep,
+.bb-media-picker-crumb-current {
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.bb-media-picker-tools [hidden],
+.bb-media-picker-btn[hidden] {
+    display: none;
+}
+
+.bb-media-picker-search,
+.bb-media-picker-folder-input,
+.bb-media-picker-field input,
+.bb-media-picker-field textarea,
+.bb-media-picker-inline-rename {
+    appearance: none;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--background, #fff);
+    color: var(--foreground, #111);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font: inherit;
+    min-width: 0;
+}
+
+.bb-media-picker-search {
+    flex: 1 1 140px;
+}
+
+.bb-media-picker-folder-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.bb-media-picker-folder-form[hidden] {
+    display: none;
+}
+
+.bb-media-picker-folder-label {
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-folder-input {
+    flex: 1 1 140px;
+}
+
+.bb-media-picker-btn {
+    appearance: none;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--background, #fff);
+    color: var(--foreground, #111);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.bb-media-picker-btn:hover:not(:disabled) {
+    background: var(--accent, #f3f4f6);
+}
+
+.bb-media-picker-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.bb-media-picker-btn-primary {
+    background: var(--primary, #2563eb);
+    border-color: var(--primary, #2563eb);
+    color: var(--primary-foreground, #fff);
+}
+
+.bb-media-picker-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+    background: var(--primary, #2563eb);
+}
+
+.bb-media-picker-btn-danger {
+    color: var(--destructive, #dc2626);
+    border-color: color-mix(in srgb, var(--destructive, #dc2626) 40%, var(--border, #e5e7eb));
+}
+
+.bb-media-picker-grid {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px;
+}
+
+.bb-media-picker-grid > .bb-media-picker-btn {
+    margin-top: 12px;
+}
+
+.bb-media-picker-grid.is-drop,
+.bb-media-picker-tree-row.is-drop,
+.bb-media-picker-card.is-drop,
+.bb-media-picker-tree-item.is-drop > .bb-media-picker-tree-row {
+    outline: 2px dashed var(--primary, #2563eb);
+    outline-offset: -2px;
+    background: color-mix(in srgb, var(--primary, #2563eb) 8%, transparent);
+}
+
+.bb-media-picker-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 10px;
+}
+
+.bb-media-picker-card {
+    appearance: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--card, var(--background, #fff));
+    border-radius: 8px;
+    padding: 0 0 8px;
+    overflow: hidden;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+}
+
+.bb-media-picker-card:hover {
+    border-color: color-mix(in srgb, var(--primary, #2563eb) 40%, var(--border, #e5e7eb));
+}
+
+.bb-media-picker-card.is-selected {
+    border-color: var(--primary, #2563eb);
+    box-shadow: 0 0 0 1px var(--primary, #2563eb);
+}
+
+.bb-media-picker-card-img {
+    width: 100%;
+    height: 96px;
+    object-fit: cover;
+    display: block;
+    background: var(--muted, #f3f4f6);
+}
+
+.bb-media-picker-card-thumb {
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted-foreground, #6b7280);
+    background: var(--muted, #f3f4f6);
+}
+
+.bb-media-picker-card-thumb .bb-media-picker-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.bb-media-picker-card-name {
+    display: block;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bb-media-picker-card-meta {
+    display: block;
+    padding: 0 8px;
+    font-size: 11px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-tree-item .bb-media-picker-tree-item {
+    margin-left: 12px;
+}
+
+.bb-media-picker-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    border-radius: 6px;
+}
+
+.bb-media-picker-tree-item.is-current > .bb-media-picker-tree-row {
+    background: color-mix(in srgb, var(--primary, #2563eb) 12%, transparent);
+}
+
+.bb-media-picker-tree-toggle,
+.bb-media-picker-tree-spacer {
+    width: 18px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.bb-media-picker-tree-toggle {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-tree-toggle span {
+    display: block;
+    width: 0;
+    height: 0;
+    margin: 7px auto 0;
+    border-style: solid;
+    border-width: 5px 0 5px 6px;
+    border-color: transparent transparent transparent currentColor;
+}
+
+.bb-media-picker-tree-toggle.is-open span {
+    transform: rotate(90deg);
+}
+
+.bb-media-picker-tree-label {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    padding: 4px 6px 4px 0;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.bb-media-picker-tree-label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bb-media-picker-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.bb-media-picker-details-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    display: block;
+    border-radius: 6px;
+    background: var(--background, #fff);
+    margin-bottom: 10px;
+}
+
+.bb-media-picker-details-name,
+.bb-media-picker-inline-rename {
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+    word-break: break-all;
+}
+
+.bb-media-picker-inline-rename {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.bb-media-picker-facts {
+    margin: 0 0 12px;
+    display: grid;
+    gap: 6px;
+}
+
+.bb-media-picker-facts > div {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.bb-media-picker-facts dt {
+    margin: 0;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-facts dd {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bb-media-picker-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.bb-media-picker-field span {
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-details-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.bb-media-picker-muted,
+.bb-media-picker-error {
+    margin: 0;
+    font-size: 13px;
+}
+
+.bb-media-picker-muted {
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-error {
+    color: var(--destructive, #dc2626);
+}
+
+.bb-media-picker-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    flex-shrink: 0;
+}
+
+.bb-media-picker-status {
+    margin: 0;
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+    min-height: 1em;
+}
+
+.bb-media-picker-status.is-error {
+    color: var(--destructive, #dc2626);
+}
+
+.bb-media-picker-foot-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.bb-media-picker-editor {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    background: var(--background, #fff);
+}
+
+.bb-media-picker-editor[hidden] {
+    display: none;
+}
+
+.bb-media-picker-editor-stage {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+.bb-media-picker-editor-stage > * {
+    height: 100%;
+}
+
+/* Filerobot crop-ratio / save menus portal to document.body (below the picker otherwise). */
+.SfxModal-Wrapper,
+.SfxPopper-wrapper {
+    z-index: 2147483110 !important;
+}
+
+.bb-media-picker-confirm {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--foreground, #111) 40%, transparent);
+    z-index: 2147483120;
+    pointer-events: auto;
+}
+
+.bb-media-picker-confirm[hidden] {
+    display: none;
+}
+
+.bb-media-picker-confirm-card {
+    width: min(360px, calc(100% - 32px));
+    background: var(--background, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.bb-media-picker-confirm-card h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+.bb-media-picker-confirm-card p {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-media-picker-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+@media (max-width: 800px) {
+    .bb-media-picker-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(120px, 22%) minmax(0, 1fr) minmax(160px, 32%);
     }
 
-    .tox-dialog__header {
-        padding: 30px 30px 0 30px;
+    .bb-media-picker-tree {
+        border-right: 0;
+        border-bottom: 1px solid var(--border, #e5e7eb);
     }
-    .tox-dialog__footer {
-        padding: 0 30px 20px 30px;
+
+    .bb-media-picker-details {
+        border-left: 0;
+        border-top: 1px solid var(--border, #e5e7eb);
     }
-    .tox-dialog__body-content {
-        padding: 20px 30px;
-    }
-    .tox-form {
-        .tox-form__grid--3col {
-            align-items: flex-end;
-            padding-bottom: 20px;
-        }
-    }
-    .tox-form__group {
-        margin-bottom: 20px;
-    }
+}
+
+/* Standalone site_media field (page blueprints: featured image, etc.) */
+grav-badger-builder--site_media {
+    display: block;
+}
+
+grav-badger-builder--site_media .bb-admin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+grav-badger-builder--site_media .bb-admin-media-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 9rem;
+    padding: 8px;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 6px;
+    background: var(--muted, #f9fafb);
+    overflow: hidden;
+}
+
+grav-badger-builder--site_media .bb-admin-media-preview-img {
+    max-height: 14rem;
+    max-width: 100%;
+    border-radius: 4px;
+    object-fit: contain;
+}
+
+grav-badger-builder--site_media .bb-admin-media-preview-file,
+grav-badger-builder--site_media .bb-admin-media-preview-empty {
+    font-size: 12px;
+    color: var(--muted-foreground, #6b7280);
+}
+
+grav-badger-builder--site_media .bb-admin-media-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+grav-badger-builder--site_media .bb-admin-btn {
+    appearance: none;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--background, #fff);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--foreground, #111);
+}
+
+grav-badger-builder--site_media .bb-admin-btn-primary {
+    background: var(--primary, #2563eb);
+    border-color: var(--primary, #2563eb);
+    color: var(--primary-foreground, #fff);
+}
+
+grav-badger-builder--site_media .bb-admin-btn-ghost {
+    border-color: transparent;
+    background: transparent;
+}
+
+grav-badger-builder--site_media .bb-admin-error {
+    color: var(--destructive, #dc2626);
+    font-size: 13px;
+}
+
+/* Meta description length indicator (under the field help/tooltip, above the textarea) */
+grav-badger-builder--meta_description {
+    display: block;
+}
+
+grav-badger-builder--meta_description .bb-admin-meta-desc-input {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px 12px;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.4;
+    color: var(--foreground, #111);
+    background: color-mix(in srgb, var(--muted, #f3f4f6) 50%, transparent);
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.bb-admin-meta-desc-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+grav-badger-builder--meta_description > .bb-admin-meta-desc-status {
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+}
+
+.bb-admin-meta-desc-icon {
+    display: block;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.bb-admin-meta-desc-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.bb-admin-meta-desc-status.is-green {
+    color: #16a34a;
+}
+
+.bb-admin-meta-desc-status.is-amber {
+    color: #d97706;
+}
+
+.bb-admin-meta-desc-status.is-red {
+    color: #dc2626;
+}
+
+.bb-admin-meta-desc-status.is-green .bb-admin-meta-desc-icon {
+    background: #16a34a;
+}
+
+.bb-admin-meta-desc-status.is-amber .bb-admin-meta-desc-icon {
+    background: #d97706;
+}
+
+.bb-admin-meta-desc-status.is-red .bb-admin-meta-desc-icon {
+    background: #dc2626;
+}
+
+.bb-admin-meta-desc-col {
+    flex-shrink: 0;
+}
+
+.bb-admin-meta-desc-col .bb-admin-meta-desc-status {
+    margin: 0;
+}
+
+.bb-admin-meta-desc-col-header {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--muted-foreground, #6b7280);
 }

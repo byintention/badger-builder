@@ -1,0 +1,10 @@
+schema: 1
+id: opener
+label: Opener
+modified: 0
+twig: opener
+fields:
+  - name: opener_classes
+    type: text
+    label: Classes
+    help: 'Space-separated CSS classes on the wrapping div. Pair with a Closer panel.'

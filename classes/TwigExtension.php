@@ -70,6 +70,9 @@ class TwigExtension extends AbstractExtension
             $path = substr($path, strlen('user/media/'));
         }
 
+        // Stored paths may be percent-encoded (TinyMCE src); disk paths use real spaces.
+        $path = implode('/', array_map('rawurldecode', explode('/', $path)));
+
         $userDir = defined('USER_DIR') ? rtrim(USER_DIR, '/') : '';
         if ($userDir !== '') {
             $full = $userDir . '/media/' . $path;
@@ -105,6 +108,8 @@ class TwigExtension extends AbstractExtension
             return '';
         }
 
+        $url = MarkdownHelper::encodeUrlPath($url);
+
         // External non-media URLs left alone; media hosts re-based to current site.
         if (preg_match('#^https?://#i', $url) || str_starts_with($url, '//')) {
             $parts = parse_url($url);
@@ -118,6 +123,8 @@ class TwigExtension extends AbstractExtension
 
         $resolved = Utils::url($url, true, true);
 
-        return is_string($resolved) ? $resolved : $url;
+        $out = is_string($resolved) ? $resolved : $url;
+
+        return MarkdownHelper::encodeUrlPath($out);
     }
 }

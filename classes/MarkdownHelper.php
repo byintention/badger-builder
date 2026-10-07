@@ -25,7 +25,7 @@ class MarkdownHelper
     public static function process(string $string, bool $block = true, ?PageInterface $page = null): string
     {
         if (self::looksLikeHtml($string)) {
-            return self::absoluteizeMediaUrls($string);
+            return self::processShortcodes(self::absoluteizeMediaUrls($string));
         }
 
         $grav = Grav::instance();
@@ -47,7 +47,30 @@ class MarkdownHelper
 
         $html = $block ? $parsedown->text($string) : $parsedown->line($string);
 
-        return self::absoluteizeMediaUrls($html);
+        return self::processShortcodes(self::absoluteizeMediaUrls($html));
+    }
+
+    /**
+     * Run shortcode-core handlers when that plugin is available.
+     * No-op otherwise so panel bodies stay valid without the dependency.
+     */
+    private static function processShortcodes(string $html): string
+    {
+        if ($html === '') {
+            return '';
+        }
+
+        $grav = Grav::instance();
+        if (!isset($grav['shortcode']) || !is_object($grav['shortcode'])) {
+            return $html;
+        }
+
+        $manager = $grav['shortcode'];
+        if (!method_exists($manager, 'processShortcodes')) {
+            return $html;
+        }
+
+        return (string) $manager->processShortcodes($html);
     }
 
     /**
@@ -68,15 +91,56 @@ class MarkdownHelper
                 if (!str_starts_with($path, '/')) {
                     $path = '/' . $path;
                 }
+                $path = self::encodeUrlPath($path);
                 $absolute = Utils::url($path, true, true);
                 if (!is_string($absolute) || $absolute === '') {
                     $absolute = $path;
                 }
 
-                return 'src=' . $quote . $absolute . $quote;
+                return 'src=' . $quote . self::encodeUrlPath($absolute) . $quote;
             },
             $html
         );
+    }
+
+    /**
+     * Percent-encode each URL path segment (spaces, unicode) without double-encoding.
+     */
+    public static function encodeUrlPath(string $url): string
+    {
+        if ($url === '') {
+            return '';
+        }
+
+        $hash = '';
+        $hashPos = strpos($url, '#');
+        if ($hashPos !== false) {
+            $hash = substr($url, $hashPos);
+            $url = substr($url, 0, $hashPos);
+        }
+
+        $query = '';
+        $queryPos = strpos($url, '?');
+        if ($queryPos !== false) {
+            $query = substr($url, $queryPos);
+            $url = substr($url, 0, $queryPos);
+        }
+
+        $prefix = '';
+        if (preg_match('#^(https?:)?//[^/]+#i', $url, $m)) {
+            $prefix = $m[0];
+            $url = substr($url, strlen($m[0]));
+        }
+
+        $encoded = implode('/', array_map(static function (string $seg): string {
+            if ($seg === '') {
+                return '';
+            }
+
+            return rawurlencode(rawurldecode($seg));
+        }, explode('/', $url)));
+
+        return $prefix . $encoded . $query . $hash;
     }
 
     /**

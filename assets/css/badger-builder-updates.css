@@ -1,0 +1,137 @@
+/* Badger Builder — Admin Next Updates page */
+
+.bb-updates {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 52rem;
+    padding: 4px 0 24px;
+}
+
+.bb-updates-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.bb-updates-title {
+    margin: 0 0 4px;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.bb-updates-subtitle {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.bb-updates-muted {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--muted-foreground, #6b7280);
+}
+
+.bb-updates-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.bb-updates-btn {
+    appearance: none;
+    border: 1px solid var(--border, #e5e7eb);
+    background: var(--background, #fff);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.bb-updates-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.bb-updates-btn-primary {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: #fff;
+}
+
+.bb-updates-btn-primary:hover:not(:disabled) {
+    background: #6d28d9;
+    border-color: #6d28d9;
+}
+
+.bb-updates-card {
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    background: var(--background, #fff);
+    padding: 14px 16px;
+}
+
+.bb-updates-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    gap: 12px;
+    margin: 0 0 12px;
+}
+
+.bb-updates-meta dt {
+    font-size: 0.75rem;
+    color: var(--muted-foreground, #6b7280);
+    margin: 0 0 2px;
+}
+
+.bb-updates-meta dd {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.bb-updates-notes {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    max-height: 18rem;
+    overflow: auto;
+    padding: 10px;
+    border-radius: 6px;
+    background: var(--muted, #f9fafb);
+}
+
+.bb-updates-error {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+}
+
+.bb-updates-status {
+    border: 1px solid #ddd6fe;
+    background: #f5f3ff;
+    color: #5b21b6;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.875rem;
+}
+
+.bb-updates-ok {
+    margin: 0;
+    color: #5b21b6;
+    font-size: 0.9rem;
+}
+
+.bb-updates-warn {
+    margin: 0 0 8px;
+    color: #92400e;
+    font-size: 0.9rem;
+}

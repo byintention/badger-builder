@@ -30,26 +30,3 @@ form:
               xss_check: false
               panel_endpoint: /badger-builder/panels
               config_endpoint: /badger-builder/config
-
-        options:
-          fields:
-            site_meta:
-              type: section
-              title: PLUGIN_BADGER_BUILDER.SITE_META
-              underline: true
-              fields:
-                header.job_code:
-                  type: text
-                  label: PLUGIN_BADGER_BUILDER.JOB_CODE
-                  help: PLUGIN_BADGER_BUILDER.JOB_CODE_HELP
-
-                header.brand:
-                  type: select
-                  label: PLUGIN_BADGER_BUILDER.BRAND
-                  help: PLUGIN_BADGER_BUILDER.BRAND_HELP
-                  default: accrete
-                  options:
-                    accrete: PLUGIN_BADGER_BUILDER.BRAND_ACCRETE
-                    binosto: PLUGIN_BADGER_BUILDER.BRAND_BINOSTO
-                    fultium: PLUGIN_BADGER_BUILDER.BRAND_FULTIUM
-                    movymia: PLUGIN_BADGER_BUILDER.BRAND_MOVYMIA

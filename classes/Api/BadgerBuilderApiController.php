@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Grav\Plugin\BadgerBuilder\Api;
 
 use Grav\Plugin\Api\Controllers\AbstractApiController;
+use Grav\Plugin\Api\Exceptions\ValidationException;
 use Grav\Plugin\Api\Response\ApiResponse;
 use Grav\Plugin\BadgerBuilder\PanelRegistry;
+use Grav\Plugin\BadgerBuilder\Updates\PluginUpdater;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -67,6 +69,49 @@ class BadgerBuilderApiController extends AbstractApiController
             'built_in_css' => (bool) ($plugin['built_in_css'] ?? true),
             'editor_css' => $this->resolveThemeEditorCssUrl(),
         ]);
+    }
+
+    /**
+     * GET /badger-builder/updates
+     */
+    public function updates(ServerRequestInterface $request): ResponseInterface
+    {
+        $this->requirePermission($request, 'admin.badger-builder.read');
+
+        $params = $request->getQueryParams();
+        $tag = isset($params['tag']) ? trim((string) $params['tag']) : null;
+        if ($tag === '') {
+            $tag = null;
+        }
+
+        try {
+            $status = (new PluginUpdater($this->grav))->check($tag);
+        } catch (\Throwable $e) {
+            throw new ValidationException($e->getMessage());
+        }
+
+        return ApiResponse::create($status);
+    }
+
+    /**
+     * POST /badger-builder/updates/apply
+     */
+    public function applyUpdate(ServerRequestInterface $request): ResponseInterface
+    {
+        $this->requirePermission($request, 'admin.badger-builder.write');
+
+        $body = $this->getRequestBody($request);
+        $tag = isset($body['tag']) ? trim((string) $body['tag']) : null;
+        if ($tag === '') {
+            $tag = null;
+        }
+
+        $result = (new PluginUpdater($this->grav))->apply($tag);
+        if (!$result['ok']) {
+            throw new ValidationException($result['message'] ?: 'Update failed.');
+        }
+
+        return ApiResponse::create($result);
     }
 
     /**

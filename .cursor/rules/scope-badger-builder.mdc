@@ -17,6 +17,7 @@ Examples:
 ✅ blueprints.yaml
 
 ❌ user/config/plugins/badger-builder.yaml
+❌ user/themes/intention-base/
 ❌ user/themes/intention/
 ❌ grav-admin/.cursor/notes/changelog.md
 ```

@@ -22,6 +22,10 @@ class BadgerBuilderPlugin extends Plugin
             'onTwigExtensions' => ['onTwigExtensions', 0],
             'onPageInitialized' => ['onPageInitialized', 0],
             'onApiRegisterRoutes' => ['onApiRegisterRoutes', 0],
+            'onApiSidebarItems' => ['onApiSidebarItems', 0],
+            'onApiPluginPageInfo' => ['onApiPluginPageInfo', 0],
+            'onApiFloatingWidgets' => ['onApiFloatingWidgets', 0],
+            'onApiBlueprintResolved' => ['onApiBlueprintResolved', 0],
             PermissionsRegisterEvent::class => ['onRegisterPermissions', 0],
         ];
     }
@@ -117,6 +121,163 @@ class BadgerBuilderPlugin extends Plugin
         $routes->get('/badger-builder/panels', [$controller, 'panels']);
         $routes->get('/badger-builder/layouts', [$controller, 'layouts']);
         $routes->get('/badger-builder/config', [$controller, 'config']);
+        $routes->get('/badger-builder/updates', [$controller, 'updates']);
+        $routes->post('/badger-builder/updates/apply', [$controller, 'applyUpdate']);
+    }
+
+    public function onApiSidebarItems(Event $event): void
+    {
+        $items = $event['items'] ?? [];
+        $items[] = [
+            'id' => 'badger-builder',
+            'plugin' => 'badger-builder',
+            'label' => 'PLUGIN_BADGER_BUILDER.SIDEBAR',
+            'icon' => 'fa-layer-group',
+            'route' => '/plugin/badger-builder',
+            'priority' => 24,
+            'authorize' => 'admin.badger-builder.read',
+        ];
+        $event['items'] = $items;
+    }
+
+    public function onApiPluginPageInfo(Event $event): void
+    {
+        if (($event['plugin'] ?? null) !== 'badger-builder') {
+            return;
+        }
+
+        $event['definition'] = [
+            'id' => 'badger-builder',
+            'plugin' => 'badger-builder',
+            'title' => 'Badger Builder Updates',
+            'icon' => 'fa-layer-group',
+            'page_type' => 'component',
+        ];
+    }
+
+    /**
+     * Autoload a hidden widget on the Pages list so meta-description
+     * traffic lights can be painted onto tree/list rows.
+     */
+    public function onApiFloatingWidgets(Event $event): void
+    {
+        $widgets = $event['widgets'] ?? [];
+        $widgets[] = [
+            'id' => 'badger-builder-meta-desc',
+            'plugin' => 'badger-builder',
+            'label' => $this->grav['language']->translate('PLUGIN_BADGER_BUILDER.META_DESCRIPTION'),
+            'icon' => 'circle-dot',
+            'showFab' => false,
+            'autoLoad' => true,
+            'routes' => ['/pages'],
+            'priority' => 0,
+            'authorize' => 'api.pages.read',
+        ];
+        $event['widgets'] = $widgets;
+    }
+
+    /**
+     * Put meta description on a Metadata tab for every page template.
+     */
+    public function onApiBlueprintResolved(Event $event): void
+    {
+        if (($event['context'] ?? '') !== 'page') {
+            return;
+        }
+
+        $fields = $event['fields'] ?? [];
+        if (!is_array($fields)) {
+            return;
+        }
+
+        $event['fields'] = $this->ensureMetadataTab($fields);
+    }
+
+    /**
+     * @param array<int|string, mixed> $fields
+     * @return array<int|string, mixed>
+     */
+    private function ensureMetadataTab(array $fields): array
+    {
+        $language = $this->grav['language'];
+        $metaField = [
+            'name' => 'header.metadata.description',
+            'type' => 'meta_description',
+            'label' => $language->translate('PLUGIN_BADGER_BUILDER.META_DESCRIPTION'),
+            'help' => $language->translate('PLUGIN_BADGER_BUILDER.META_DESCRIPTION_HELP'),
+            'rows' => 3,
+        ];
+
+        $this->stripMetaDescriptionFields($fields);
+
+        foreach ($fields as &$field) {
+            if (!is_array($field) || ($field['type'] ?? '') !== 'tabs' || !isset($field['fields']) || !is_array($field['fields'])) {
+                continue;
+            }
+
+            $tabs = &$field['fields'];
+            $metaIndex = null;
+            $contentIndex = null;
+            foreach ($tabs as $i => $tab) {
+                if (!is_array($tab)) {
+                    continue;
+                }
+                $name = (string) ($tab['name'] ?? '');
+                if ($name === 'metadata') {
+                    $metaIndex = $i;
+                }
+                if ($name === 'content') {
+                    $contentIndex = $i;
+                }
+            }
+
+            if ($metaIndex === null) {
+                $newTab = [
+                    'name' => 'metadata',
+                    'type' => 'tab',
+                    'title' => $language->translate('PLUGIN_BADGER_BUILDER.METADATA'),
+                    'fields' => [$metaField],
+                ];
+                if ($contentIndex !== null) {
+                    array_splice($tabs, (int) $contentIndex + 1, 0, [$newTab]);
+                } else {
+                    $tabs[] = $newTab;
+                }
+            } else {
+                $existing = $tabs[$metaIndex]['fields'] ?? [];
+                if (!is_array($existing)) {
+                    $existing = [];
+                }
+                array_unshift($existing, $metaField);
+                $tabs[$metaIndex]['fields'] = array_values($existing);
+            }
+
+            break;
+        }
+        unset($field);
+
+        return $fields;
+    }
+
+    /**
+     * @param array<int|string, mixed> $fields
+     */
+    private function stripMetaDescriptionFields(array &$fields): void
+    {
+        $kept = [];
+        foreach ($fields as $field) {
+            if (!is_array($field)) {
+                continue;
+            }
+            if (($field['name'] ?? '') === 'header.metadata.description') {
+                continue;
+            }
+            if (isset($field['fields']) && is_array($field['fields'])) {
+                $this->stripMetaDescriptionFields($field['fields']);
+            }
+            $kept[] = $field;
+        }
+        $fields = $kept;
     }
 
     public function onRegisterPermissions(PermissionsRegisterEvent $event): void

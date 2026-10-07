@@ -1,0 +1,149 @@
+# Build a Grav-installable zip and attach it to a Gitea Release on tag push.
+# Tag format: vX.Y.Z (e.g. v1.2.0) → asset badger-builder-1.2.0.zip
+#
+# Requires: repository Actions enabled + a runner; GITHUB_TOKEN is provided by Gitea.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install zip tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zip rsync jq
+
+      - name: Build curated zip
+        id: build
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          if [ "$VERSION" = "$TAG" ] || [ -z "$VERSION" ]; then
+            echo "Tag must look like vX.Y.Z (got: $TAG)" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+          STAGE="$(mktemp -d)"
+          DEST="$STAGE/badger-builder"
+          mkdir -p "$DEST"
+
+          # Runtime plugin tree only — exclude VCS, agent harness, workflows, dist.
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.cursor/' \
+            --exclude='.gitea/' \
+            --exclude='.github/' \
+            --exclude='node_modules/' \
+            --exclude='tests/' \
+            --exclude='dist/' \
+            --exclude='.DS_Store' \
+            --exclude='Thumbs.db' \
+            --exclude='*.log' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            ./ "$DEST/"
+
+          mkdir -p dist
+          (cd "$STAGE" && zip -rq "$GITHUB_WORKSPACE/dist/badger-builder-${VERSION}.zip" badger-builder)
+          ls -la "dist/badger-builder-${VERSION}.zip"
+          unzip -l "dist/badger-builder-${VERSION}.zip" | head -40
+
+      - name: Extract changelog body for this version
+        id: notes
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.build.outputs.version }}"
+          BODY_FILE="$(mktemp)"
+          if [ -f CHANGELOG.md ]; then
+            # Grab section under "# vX.Y.Z" until next "# v" heading.
+            awk -v ver="$VERSION" '
+              BEGIN { p=0 }
+              $0 ~ ("^# v" ver "[[:space:]]*$") { p=1; next }
+              p && /^# v/ { exit }
+              p { print }
+            ' CHANGELOG.md > "$BODY_FILE" || true
+          fi
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "Release ${{ steps.build.outputs.tag }}" > "$BODY_FILE"
+          fi
+          {
+            echo "body<<EOF"
+            cat "$BODY_FILE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Gitea release and upload zip
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERVER_URL: ${{ gitea.server_url }}
+          REPO: ${{ gitea.repository }}
+          TAG: ${{ steps.build.outputs.tag }}
+          VERSION: ${{ steps.build.outputs.version }}
+          BODY: ${{ steps.notes.outputs.body }}
+        run: |
+          set -euo pipefail
+          API="${SERVER_URL%/}/api/v1"
+          ASSET="dist/badger-builder-${VERSION}.zip"
+          NAME="badger-builder-${VERSION}.zip"
+
+          # Create release (ignore conflict if it already exists for this tag).
+          RESP="$(curl -sS -w '\n%{http_code}' -X POST \
+            -H "Authorization: token ${TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            "${API}/repos/${REPO}/releases" \
+            -d "$(jq -n \
+              --arg tag "$TAG" \
+              --arg name "$TAG" \
+              --arg body "$BODY" \
+              '{tag_name:$tag, name:$name, body:$body, draft:false, prerelease:false}')")"
+          HTTP="$(echo "$RESP" | tail -n1)"
+          JSON="$(echo "$RESP" | sed '$d')"
+
+          if [ "$HTTP" = "409" ] || [ "$HTTP" = "422" ]; then
+            # Fetch existing release by tag.
+            JSON="$(curl -sS -H "Authorization: token ${TOKEN}" -H 'Accept: application/json' \
+              "${API}/repos/${REPO}/releases/tags/${TAG}")"
+          elif [ "$HTTP" != "200" ] && [ "$HTTP" != "201" ]; then
+            echo "Create release failed HTTP $HTTP: $JSON" >&2
+            exit 1
+          fi
+
+          RELEASE_ID="$(echo "$JSON" | jq -r '.id')"
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "Could not resolve release id: $JSON" >&2
+            exit 1
+          fi
+
+          # Drop any existing asset with the same name, then upload.
+          EXISTING="$(echo "$JSON" | jq -r --arg n "$NAME" '.assets[]? | select(.name==$n) | .id' | head -n1 || true)"
+          if [ -n "${EXISTING:-}" ] && [ "$EXISTING" != "null" ]; then
+            curl -sS -X DELETE -H "Authorization: token ${TOKEN}" \
+              "${API}/repos/${REPO}/releases/assets/${EXISTING}" >/dev/null || true
+          fi
+
+          UPLOAD="$(curl -sS -w '\n%{http_code}' -X POST \
+            -H "Authorization: token ${TOKEN}" \
+            -H 'Content-Type: application/zip' \
+            -H 'Accept: application/json' \
+            "${API}/repos/${REPO}/releases/${RELEASE_ID}/assets?name=$(printf %s "$NAME" | jq -sRr @uri)" \
+            --data-binary @"$ASSET")"
+          UHTTP="$(echo "$UPLOAD" | tail -n1)"
+          UJSON="$(echo "$UPLOAD" | sed '$d')"
+          if [ "$UHTTP" != "200" ] && [ "$UHTTP" != "201" ]; then
+            echo "Asset upload failed HTTP $UHTTP: $UJSON" >&2
+            exit 1
+          fi
+          echo "Uploaded $NAME to release $TAG (id $RELEASE_ID)"

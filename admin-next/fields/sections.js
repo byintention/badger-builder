@@ -1,7 +1,7 @@
 /**
  * sections — Badger Builder custom Admin2 field.
  *
- * Manages header.sections: add/reorder/remove rows, per-panel field editors.
+ * Manages header.sections: add/duplicate/reorder/remove rows, per-panel field editors.
  * Styles: assets/css/badger-builder-admin.css (loaded via _ensureStylesheet).
  * Long text (markdown/textarea) uses Modern Editor when available (HTML storage).
  */
@@ -19,9 +19,9 @@ const BADGER_STYLE_FORMATS = [
     { title: 'Positive', selector: 'p', classes: 'positive' },
     { title: 'Error', selector: 'p', classes: 'negative' },
     { title: 'Warning', selector: 'p', classes: 'warning' },
-    { title: 'Smaller text', selector: 'p', classes: 'smallText' },
-    { title: 'Larger text', selector: 'p', classes: 'largeText' },
-    { title: 'Super large text', selector: 'p', classes: 'superLargeText' },
+    { title: 'Smaller text', selector: 'p', classes: 'text-sm' },
+    { title: 'Larger text', selector: 'p', classes: 'text-lg' },
+    { title: 'Super large text', selector: 'p', classes: 'text-xl' },
     { title: 'Button', selector: 'a', classes: 'btn' },
     { title: 'Chip', inline: 'span', classes: 'chip' },
 ];
@@ -85,9 +85,7 @@ function mergeTinyMceStyleOpts(opts, editorCssUrl) {
             return;
         }
         ensureBadgerMediaPicker().then((picker) => {
-            const editor = window.tinymce?.activeEditor;
             return picker.open({
-                editor,
                 title: 'Insert image',
                 onInsert({ url, alt }) {
                     callback(url, { alt: alt || '' });
@@ -251,19 +249,34 @@ class SectionsField extends HTMLElement {
     }
 
     set field(v) {
+        // Admin2 reassigns field on every parent re-render. Store only — do not
+        // wipe the DOM or Modern Editor instances lose focus on click/keypress.
         this._field = v;
-        if (this.isConnected) this._render();
     }
     get field() { return this._field; }
 
     set value(v) {
         const arr = Array.isArray(v) ? JSON.parse(JSON.stringify(v)) : [];
-        this._value = arr.map((s) => this._normalizeSection(s));
+        const normalized = arr.map((s) => this._normalizeSection(s));
+        // Admin2 writes value back after every change event. Skip remount when
+        // the payload matches what we already hold (typing / TinyMCE edits).
+        if (this._valuesEqual(normalized, this._value)) {
+            return;
+        }
+        this._value = normalized;
         if (this.isConnected && !this._loading) this._render();
     }
     get value() {
         this._syncFieldsFromDom();
         return this._value;
+    }
+
+    _valuesEqual(a, b) {
+        try {
+            return JSON.stringify(a) === JSON.stringify(b);
+        } catch {
+            return false;
+        }
     }
 
     connectedCallback() {
@@ -617,6 +630,15 @@ class SectionsField extends HTMLElement {
                 const extra = items.length > 1 ? ` (+${items.length - 1})` : '';
                 return snippet(first) + extra;
             }
+            case 'testimonials': {
+                const heading = snippet(section.testimonials_heading);
+                if (heading) return heading;
+                return section.testimonials_mode === 'all' ? 'All published' : 'Random one';
+            }
+            case 'opener':
+                return snippet(section.opener_classes);
+            case 'closer':
+                return 'Closes wrapper';
             default:
                 return '';
         }
@@ -671,7 +693,19 @@ class SectionsField extends HTMLElement {
     _siteMediaPreviewUrl(path) {
         if (!path) return '';
         const base = (window.__GRAV_API_SERVER_URL || '').replace(/\/$/, '');
-        const rel = String(path).replace(/^\/+/, '');
+        const rel = String(path)
+            .replace(/^\/+/, '')
+            .split('/')
+            .filter(Boolean)
+            .map((seg) => {
+                try {
+                    seg = decodeURIComponent(seg);
+                } catch {
+                    // keep
+                }
+                return encodeURIComponent(seg);
+            })
+            .join('/');
         return `${base}/user/media/${rel}`;
     }
 
@@ -681,13 +715,11 @@ class SectionsField extends HTMLElement {
 
     async _openSiteMediaPicker(index, name) {
         try {
-            await this._ensureModernEditor();
             const picker = await ensureBadgerMediaPicker();
             const section = this._value[index] || {};
             const selectedPath = section[name] || null;
             const alt = section[this._altFieldName(name)] || '';
             await picker.open({
-                editor: window.tinymce?.activeEditor || window.tinymce?.editors?.[0],
                 title: 'Choose image',
                 selectedPath,
                 alt,
@@ -886,6 +918,24 @@ class SectionsField extends HTMLElement {
         this._emit();
     }
 
+    _duplicateSection(index) {
+        this._syncFieldsFromDom();
+        const section = this._value[index];
+        if (!section) return;
+        const clone = JSON.parse(JSON.stringify(section));
+        const next = [...this._value];
+        next.splice(index + 1, 0, clone);
+        this._value = next;
+        const remapped = new Set();
+        this._expanded.forEach((i) => {
+            remapped.add(i > index ? i + 1 : i);
+        });
+        remapped.add(index + 1);
+        this._expanded = remapped;
+        this._render();
+        this._emit();
+    }
+
     _toggleExpanded(index) {
         const card = this.querySelector(`.bb-admin-card[data-index="${index}"]`);
         if (!card) {
@@ -940,7 +990,9 @@ class SectionsField extends HTMLElement {
                 ? 'bb-admin-field bb-admin-field-half bb-admin-field-media'
                 : width === 'third'
                     ? 'bb-admin-field bb-admin-field-third bb-admin-field-media'
-                    : 'bb-admin-field bb-admin-field-media';
+                    : width === 'hero-image'
+                        ? 'bb-admin-field bb-admin-hero-image bb-admin-field-media'
+                        : 'bb-admin-field bb-admin-field-media';
         const thumb = val ? this._siteMediaPreviewUrl(val) : '';
         const preview = val
             ? (thumb
@@ -1104,7 +1156,7 @@ class SectionsField extends HTMLElement {
                         ${help}
                         <div class="bb-admin-list">${itemsHtml || '<div class="bb-admin-list-empty">No items yet.</div>'}</div>
                         <div class="bb-admin-list-foot">
-                            <button type="button" class="bb-admin-btn bb-admin-btn-purple" data-action="list-add"
+                            <button type="button" class="bb-admin-btn bb-admin-btn-primary" data-action="list-add"
                                 data-index="${index}" data-name="${this._escape(name)}">Add item</button>
                         </div>
                     </div>
@@ -1157,20 +1209,44 @@ class SectionsField extends HTMLElement {
             const configFields = fields.filter((f) => f.type !== 'list');
             const listFields = fields.filter((f) => f.type === 'list');
             return `
+                ${listFields.map((f) => this._renderField(index, section, f)).join('')}
                 <div class="bb-admin-field bb-admin-field-quarters">
                     ${configFields.map((f) => this._renderField(index, section, f, { width: 'quarter' })).join('')}
                 </div>
+            `;
+        }
+        if (panelId === 'faq' && panel) {
+            const fields = panel.fields || [];
+            const listFields = fields.filter((f) => f.type === 'list');
+            const configFields = fields.filter((f) => f.type !== 'list');
+            return `
                 ${listFields.map((f) => this._renderField(index, section, f)).join('')}
+                ${configFields.length ? `<div class="bb-admin-field bb-admin-field-halves">
+                    ${configFields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
+                </div>` : ''}
             `;
         }
         if (panelId === 'hero' && panel) {
             const fields = panel.fields || [];
-            const mainFields = fields.filter((f) => f.width !== 'quarter');
-            const quarterFields = fields.filter((f) => f.width === 'quarter');
+            const bodyField = fields.find((f) => f.name === 'hero_body');
+            const imageFields = fields.filter((f) =>
+                f.name === 'hero_image_desktop' || f.name === 'hero_image_mobile'
+            );
+            const configFields = fields.filter((f) =>
+                f.name === 'hero_overall_classes'
+                || f.name === 'hero_layout'
+                || f.name === 'hero_align'
+                || f.name === 'hero_background'
+            );
             return `
-                ${mainFields.map((f) => this._renderField(index, section, f)).join('')}
-                ${quarterFields.length ? `<div class="bb-admin-field bb-admin-field-quarters">
-                    ${quarterFields.map((f) => this._renderField(index, section, f, { width: 'quarter' })).join('')}
+                <div class="bb-admin-field-halves bb-admin-field-halves-hero">
+                    ${bodyField ? this._renderField(index, section, bodyField, { width: 'half' }) : ''}
+                    ${imageFields.length ? `<div class="bb-admin-field bb-admin-field-half bb-admin-hero-images">
+                        ${imageFields.map((f) => this._renderField(index, section, f, { width: 'hero-image' })).join('')}
+                    </div>` : ''}
+                </div>
+                ${configFields.length ? `<div class="bb-admin-field bb-admin-field-quarters">
+                    ${configFields.map((f) => this._renderField(index, section, f, { width: 'quarter' })).join('')}
                 </div>` : ''}
             `;
         }
@@ -1182,10 +1258,26 @@ class SectionsField extends HTMLElement {
         }
         if (panelId === 'text' && panel) {
             const fields = panel.fields || [];
-            // Row 1: body + image; row 2: background + align (all half-width, wraps).
-            return `<div class="bb-admin-field bb-admin-field-halves bb-admin-field-halves-text">
-                ${fields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
-            </div>`;
+            const bodyField = fields.find((f) => f.name === 'text_body');
+            const imageField = fields.find((f) => f.name === 'text_image');
+            const captionField = fields.find((f) => f.name === 'text_image_caption');
+            const configFields = fields.filter((f) =>
+                f.name === 'text_overall_classes'
+                || f.name === 'text_background'
+                || f.name === 'text_align'
+            );
+            return `
+                <div class="bb-admin-field bb-admin-field-halves bb-admin-field-halves-text">
+                    ${bodyField ? this._renderField(index, section, bodyField, { width: 'half' }) : ''}
+                    ${imageField || captionField ? `<div class="bb-admin-field bb-admin-field-half bb-admin-text-image-col">
+                        ${imageField ? this._renderField(index, section, imageField, { width: 'hero-image' }) : ''}
+                        ${captionField ? this._renderField(index, section, captionField) : ''}
+                    </div>` : ''}
+                </div>
+                ${configFields.length ? `<div class="bb-admin-field bb-admin-field-thirds">
+                    ${configFields.map((f) => this._renderField(index, section, f, { width: 'third' })).join('')}
+                </div>` : ''}
+            `;
         }
         if (panelId === 'full' && panel) {
             const fields = panel.fields || [];
@@ -1195,6 +1287,17 @@ class SectionsField extends HTMLElement {
                 ${mainFields.map((f) => this._renderField(index, section, f)).join('')}
                 ${thirdFields.length ? `<div class="bb-admin-field bb-admin-field-thirds">
                     ${thirdFields.map((f) => this._renderField(index, section, f, { width: 'third' })).join('')}
+                </div>` : ''}
+            `;
+        }
+        if (panelId === 'testimonials' && panel) {
+            const fields = panel.fields || [];
+            const mainFields = fields.filter((f) => f.width !== 'half');
+            const halfFields = fields.filter((f) => f.width === 'half');
+            return `
+                ${mainFields.map((f) => this._renderField(index, section, f)).join('')}
+                ${halfFields.length ? `<div class="bb-admin-field bb-admin-field-halves">
+                    ${halfFields.map((f) => this._renderField(index, section, f, { width: 'half' })).join('')}
                 </div>` : ''}
             `;
         }
@@ -1223,6 +1326,12 @@ class SectionsField extends HTMLElement {
                     <div class="bb-admin-card-actions">
                         <button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="up" data-index="${index}" title="Move up">↑</button>
                         <button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="down" data-index="${index}" title="Move down">↓</button>
+                        <button type="button" class="bb-admin-btn bb-admin-btn-ghost" data-action="duplicate" data-index="${index}" title="Duplicate" aria-label="Duplicate section">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
                         <button type="button" class="bb-admin-icon-btn bb-admin-icon-btn-delete" data-action="remove" data-index="${index}" title="Delete" aria-label="Delete section">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M3 6h18"></path>
@@ -1302,6 +1411,12 @@ class SectionsField extends HTMLElement {
             btn.addEventListener('click', () => {
                 const i = parseInt(btn.dataset.index, 10);
                 this._moveSection(i, i + 1);
+            });
+        });
+
+        this.querySelectorAll('[data-action="duplicate"]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this._duplicateSection(parseInt(btn.dataset.index, 10));
             });
         });
 

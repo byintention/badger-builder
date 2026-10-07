@@ -10,14 +10,23 @@ PLUGIN_BADGER_BUILDER:
   LOCAL_PANELS_THEME_PATH_HELP: 'Relative to the active theme root (e.g. badger-builder/panels).'
   LOCAL_PANELS_DATA_PATH: Data panels path
   LOCAL_PANELS_DATA_PATH_HELP: 'Relative to user/data (e.g. badger-builder/panels).'
+  UPDATES_SECTION: Private updates (Gitea)
+  UPDATES_ENABLED: Enable update checks
+  UPDATES_ENABLED_HELP: 'When enabled, Admin can check Gitea Releases for curated plugin zips.'
+  UPDATES_BASE_URL: Gitea base URL
+  UPDATES_BASE_URL_HELP: 'e.g. https://gitea.com (no trailing slash required).'
+  UPDATES_OWNER: Repository owner
+  UPDATES_REPO: Repository name
+  UPDATES_TOKEN: Access token
+  UPDATES_TOKEN_HELP: 'Private repo token with read access to releases/assets. Prefer site config user/config/plugins/badger-builder.yaml — never commit.'
+  UPDATES_ASSET_PREFIX: Release asset prefix
+  UPDATES_ASSET_PREFIX_HELP: 'Asset must match {prefix}{version}.zip (default badger-builder-).'
+  UPDATES_PRERELEASE: Include prereleases
+  UPDATES_PRERELEASE_HELP: 'When yes, newest prerelease may be offered as latest.'
+  SIDEBAR: Badger Builder
   SECTIONS: Page sections
   SECTIONS_HELP: Add, remove, and reorder flexible content sections.
-  SITE_META: Site meta
-  JOB_CODE: Job code
-  JOB_CODE_HELP: Job / material code shown in the footer.
-  BRAND: Brand
-  BRAND_HELP: Adds a brand class on the page wrapper for theme styling.
-  BRAND_ACCRETE: Accrete
-  BRAND_BINOSTO: Binosto
-  BRAND_FULTIUM: Fultium
-  BRAND_MOVYMIA: Movymia
+  METADATA: Metadata
+  META_DESCRIPTION: Meta description
+  META_DESCRIPTION_HELP: Used in search results. Aim for about 150–160 characters. Overrides the site default.
+  META_DESCRIPTION_COLUMN: Meta
