@@ -26,7 +26,3 @@ PLUGIN_BADGER_BUILDER:
   SIDEBAR: Badger Builder
   SECTIONS: Page sections
   SECTIONS_HELP: Add, remove, and reorder flexible content sections.
-  METADATA: Metadata
-  META_DESCRIPTION: Meta description
-  META_DESCRIPTION_HELP: Used in search results. Aim for about 150–160 characters. Overrides the site default.
-  META_DESCRIPTION_COLUMN: Meta

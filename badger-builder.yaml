@@ -18,9 +18,9 @@ local_panels:
   data_path: badger-builder/panels
 updates:
   enabled: true
-  base_url: https://gitea.com
+  base_url: https://github.com
   owner: byintention
-  repo: badgerbuilder
+  repo: badger-builder
   token: ''
   asset_prefix: badger-builder-
   prerelease: false

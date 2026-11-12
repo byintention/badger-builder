@@ -58,7 +58,6 @@ Local YAML load order (last wins): plugin `panels/` → `user/data/{data_path}` 
 - Long text (`markdown` / `textarea`) mounts **Modern Editor** (`grav-modern-editor--moderneditor`) when that plugin is enabled; values are stored as **HTML** (`markdown_enabled: false`) so tags like `<sup>` and `<a class="btn btn-arrow">` round-trip cleanly. If Modern Editor is missing, Badger falls back to plain textareas.
 - `**site_media`** (alias `page_media` inside the sections field): opens the shared three-pane site media picker (`admin-next/fields/bb-media-picker.js`). Stores a portable relative path under `user/media` plus companion `{name}_alt`. No page-media uploads on Badger Builder pages (`header.media_order` unset). TinyMCE image insert uses the same picker via `file_picker_callback` and stores root-relative `/user/media/...` `src` values; front-end Twig/`bb_markdown` absoluteizes for the live domain. Details pane **Edit** opens a vendored Filerobot build (`assets/vendor/filerobot-image-editor/`, crop/rotate/resize); Save writes a new file, with an optional replace-original.
 - Standalone page-blueprint field: `admin-next/fields/site_media.js` (`type: site_media`). Same picker; optional `alt_field` writes the companion alt (default `{name}_alt`). Themes may use this for featured images and similar header fields.
-- Meta description: `admin-next/fields/meta_description.js` (`type: meta_description`). Live length status under the field help — Good 150–160 characters, OK 120–149, Poor if shorter or longer (colour, Poor/OK/Good, and character count). Injected on a **Metadata** tab for every page template via `onApiBlueprintResolved`.
 
 ### Theme integration (do not edit themes here)
 
@@ -78,6 +77,10 @@ Panel bodies use the `bb_markdown` Twig filter (`TwigExtension` / `MarkdownHelpe
 - Site token: `user/config/plugins/badger-builder.yaml` → `updates.token` (describe for the user; do not write secrets from this workspace).
 - Do **not** publish to official GPM; `gpm: false` in `blueprints.yaml`.
 - Theme `badger-builder/` panels/templates are out of scope for plugin zips.
+
+## Plans
+
+Write plans in [`.cursor/plans/`](.cursor/plans/). If Cursor saves a plan under the home directory, move it here before the planning turn ends.
 
 ## Changelog
 

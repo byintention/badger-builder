@@ -2,12 +2,12 @@ name: Badger Builder
 slug: badger-builder
 type: plugin
 version: 1.0.0
-description: Flexible page sections builder for Admin2 with theme-agnostic front-end rendering
+description: Flexible page sections builder for Admin2 that allows theme to override panel templates
 icon: layer-group
 author:
   name: Intention
   email: admin@fcswebsites.co.uk
-homepage: https://gitea.com/byintention/badgerbuilder
+homepage: https://github.com/byintention/badger-builder
 keywords: grav, plugin, page-builder, sections, admin2
 license: MIT
 gpm: false

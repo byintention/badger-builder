@@ -1,5 +1,14 @@
+2026-11-11
+Plans are stored in this repo's .cursor/plans folder, including ones Cursor first writes to the home directory.
+
+2026-11-10
+Removed the Metadata tab, meta description field, and pages-list marks. SEO now lives in intention-seo.
+
 2026-10-07
 Removed the Options tab Site meta section (job code field and brand dropdown).
+
+2026-10-06
+Added a contact panel that reuses the live Quick Contact form.
 
 2026-10-06
 TinyMCE Paragraph menu heading previews inherit 14px/24px; Formats menu CSS left unchanged.
@@ -50,6 +59,9 @@ Media picker grid scrolls; image URLs percent-encode folder names with spaces so
 Site media picker is a three-pane overlay (folder tree, grid, details) with drag-and-drop upload, folder ops, and metadata — no TinyMCE dialog.
 
 
+
+2026-09-02
+Section cards can duplicate a panel immediately below, not only at the end of the list.
 
 2026-09-02
 Added Opener and Closer panels: wrap later sections in a classed div.

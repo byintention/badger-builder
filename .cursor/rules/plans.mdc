@@ -1,0 +1,13 @@
+---
+description: Save plans in this workspace's .cursor/plans folder
+alwaysApply: true
+---
+
+# Plans
+
+Write every plan for this workspace in [`.cursor/plans/`](../plans/) at this repository root.
+
+- Plan mode files belong here, including `*.plan.md`.
+- Do not leave a plan in the home directory (`~/.cursor/plans`). If Cursor creates one there, move it into this repository's `.cursor/plans/` before the planning turn ends.
+- Do not write plans into another product or the parent Grav install.
+- Use a short descriptive filename. Leave a plan untouched when the user says it is read-only.

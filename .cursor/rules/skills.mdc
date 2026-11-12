@@ -28,3 +28,4 @@ Use the **narrowest** match: if the task is API-only, use `grav-api-integration`
 
 - [grav-core.mdc](grav-core.mdc) — never modify `system/` or `vendor/`
 - [changelog.mdc](changelog.mdc) — append task summary to `.cursor/notes/changelog.md` when a task is completed
+- [plans.mdc](plans.mdc) — write plans in `.cursor/plans/`

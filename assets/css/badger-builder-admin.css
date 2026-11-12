@@ -1,9 +1,7 @@
 /* Badger Builder — Admin2 fields.
-   Loaded lazily by sections.js / site_media.js / meta_description.js / widgets / bb-media-picker.js (_ensureStylesheet). Not used on the public site.
+   Loaded lazily by sections.js / site_media.js / bb-media-picker.js (_ensureStylesheet). Not used on the public site.
    Sections UI is scoped to grav-badger-builder--sections; standalone site_media
-   field styles use grav-badger-builder--site_media; meta_description uses
-   grav-badger-builder--meta_description (status icon sits under the Admin Next help/tooltip).
-   Pages-list traffic lights use .bb-admin-meta-desc-col (injected by the autoload widget). */
+   field styles use grav-badger-builder--site_media. */
 
 grav-badger-builder--sections .bb-admin-sections {
     display: flex;
@@ -1200,91 +1198,4 @@ grav-badger-builder--site_media .bb-admin-btn-ghost {
 grav-badger-builder--site_media .bb-admin-error {
     color: var(--destructive, #dc2626);
     font-size: 13px;
-}
-
-/* Meta description length indicator (under the field help/tooltip, above the textarea) */
-grav-badger-builder--meta_description {
-    display: block;
-}
-
-grav-badger-builder--meta_description .bb-admin-meta-desc-input {
-    width: 100%;
-    min-height: 80px;
-    padding: 10px 12px;
-    border: 1px solid var(--border, #e5e7eb);
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: inherit;
-    line-height: 1.4;
-    color: var(--foreground, #111);
-    background: color-mix(in srgb, var(--muted, #f3f4f6) 50%, transparent);
-    resize: vertical;
-    box-sizing: border-box;
-}
-
-.bb-admin-meta-desc-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-top: 0.35rem;
-    font-size: 12px;
-    font-weight: 600;
-    line-height: 1;
-}
-
-grav-badger-builder--meta_description > .bb-admin-meta-desc-status {
-    margin-top: 0;
-    margin-bottom: 0.35rem;
-}
-
-.bb-admin-meta-desc-icon {
-    display: block;
-    width: 0.65rem;
-    height: 0.65rem;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.bb-admin-meta-desc-count {
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-}
-
-.bb-admin-meta-desc-status.is-green {
-    color: #16a34a;
-}
-
-.bb-admin-meta-desc-status.is-amber {
-    color: #d97706;
-}
-
-.bb-admin-meta-desc-status.is-red {
-    color: #dc2626;
-}
-
-.bb-admin-meta-desc-status.is-green .bb-admin-meta-desc-icon {
-    background: #16a34a;
-}
-
-.bb-admin-meta-desc-status.is-amber .bb-admin-meta-desc-icon {
-    background: #d97706;
-}
-
-.bb-admin-meta-desc-status.is-red .bb-admin-meta-desc-icon {
-    background: #dc2626;
-}
-
-.bb-admin-meta-desc-col {
-    flex-shrink: 0;
-}
-
-.bb-admin-meta-desc-col .bb-admin-meta-desc-status {
-    margin: 0;
-}
-
-.bb-admin-meta-desc-col-header {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    color: var(--muted-foreground, #6b7280);
 }
